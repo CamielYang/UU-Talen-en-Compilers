@@ -30,26 +30,23 @@ newtype Second = Second { runSecond :: Int } deriving (Eq, Ord, Show)
 
 
 -- Exercise 1
-digitsToInt :: [Int] -> Int
-digitsToInt = foldl (\acc x -> acc * 10 + x) 0
-
 parseYear :: Parser Char Year
-parseYear = Year <$> integer
+parseYear = natural >>= \x -> if x <= 9999 then succeed $ Year x else empty
 
 parseMonth :: Parser Char Month
-parseMonth = (\a b -> Month $ digitsToInt [a,b]) <$> integer <*> integer
+parseMonth = natural >>= \x -> if x <= 12 then succeed $ Month x else empty
 
 parseDay :: Parser Char Day
-parseDay = (\a b -> Day $ digitsToInt [a,b]) <$> integer <*> integer
+parseDay = natural >>= \x -> if x <= 31 then succeed $ Day x else empty
 
 parseHour :: Parser Char Hour
-parseHour = (\a b -> Hour $ digitsToInt [a,b]) <$> integer <*> integer
+parseHour = natural >>= \x -> if x < 24 then succeed $ Hour x else empty
 
 parseMinute :: Parser Char Minute
-parseMinute = (\a b -> Minute $ digitsToInt [a,b]) <$> integer <*> integer
+parseMinute = natural >>= \x -> if x < 60 then succeed $ Minute x else empty
 
 parseSecond :: Parser Char Second
-parseSecond = (\a b -> Second $ digitsToInt [a,b]) <$> integer <*> integer
+parseSecond = natural >>= \x -> if x < 60 then succeed $ Second x else empty
 
 parseDate :: Parser Char Date
 parseDate = Date <$> parseYear <*> parseMonth <*> parseDay
@@ -96,8 +93,7 @@ printDateTime (DateTime d t utc) = showTwoDigit (runYear $ year d)
                                 ++ showTwoDigit (runSecond $ second t)
                                 ++ (if utc then "Z" else "")
 
--- printDateTime' :: DateTime -> String
--- printDateTime' (DateTime d t utc) = shows "hello" . shows "world" "ff"
+test = run parseDateTime (printDateTime testDt) == Just testDt
 
 -- Exercise 5
 checkDateTime :: DateTime -> Bool
