@@ -6,11 +6,22 @@ import           Prelude           hiding (sequence, ($>), (*>), (<$), (<*))
 
 
 -- Exercise 6
-data Calendar = Calendar
+data Calendar = Calendar {
+    version :: String,
+    pid     :: String,
+    events  :: [Event]
+}
     deriving (Eq, Ord, Show)
 
-data Event = Event
-    deriving (Eq, Ord, Show)
+data Event = Event {
+    dtstamp     :: DateTime,
+    uid         :: String,
+    dtstart     :: DateTime,
+    dtend       :: DateTime,
+    description :: String,
+    summary     :: String,
+    location    :: String
+} deriving (Eq, Ord, Show)
 
 -- Exercise 7
 data Token = Token

@@ -28,25 +28,27 @@ newtype Hour   = Hour   { runHour   :: Int } deriving (Eq, Ord, Show)
 newtype Minute = Minute { runMinute :: Int } deriving (Eq, Ord, Show)
 newtype Second = Second { runSecond :: Int } deriving (Eq, Ord, Show)
 
-
 -- Exercise 1
+digitsToInt :: [Int] -> Int
+digitsToInt = foldl (\acc x -> acc * 10 + x) 0
+
 parseYear :: Parser Char Year
-parseYear = natural >>= \x -> if x <= 9999 then succeed $ Year x else empty
+parseYear = (\a b c d -> Year $ digitsToInt [a,b,c,d]) <$> newdigit <*> newdigit <*> newdigit <*> newdigit
 
 parseMonth :: Parser Char Month
-parseMonth = natural >>= \x -> if x <= 12 then succeed $ Month x else empty
+parseMonth = (\a b -> Month $ digitsToInt [a,b]) <$> newdigit <*> newdigit
 
 parseDay :: Parser Char Day
-parseDay = natural >>= \x -> if x <= 31 then succeed $ Day x else empty
+parseDay = (\a b -> Day $ digitsToInt [a,b]) <$> newdigit <*> newdigit
 
 parseHour :: Parser Char Hour
-parseHour = natural >>= \x -> if x < 24 then succeed $ Hour x else empty
+parseHour = (\a b -> Hour $ digitsToInt [a,b]) <$> newdigit <*> newdigit
 
 parseMinute :: Parser Char Minute
-parseMinute = natural >>= \x -> if x < 60 then succeed $ Minute x else empty
+parseMinute = (\a b -> Minute $ digitsToInt [a,b]) <$> newdigit <*> newdigit
 
 parseSecond :: Parser Char Second
-parseSecond = natural >>= \x -> if x < 60 then succeed $ Second x else empty
+parseSecond = (\a b -> Second $ digitsToInt [a,b]) <$> newdigit <*> newdigit
 
 parseDate :: Parser Char Date
 parseDate = Date <$> parseYear <*> parseMonth <*> parseDay
@@ -64,8 +66,8 @@ parseDateTime = (\a _ c d -> DateTime a c d) <$>
 -- Exercise 2
 run :: Parser a b -> [a] -> Maybe b
 run p xs = case parse p xs of
-              []           -> Nothing
-              ((a, _) : _) -> Just a
+            []           -> Nothing
+            ((a, _) : _) -> Just a
 
 -- Exercise 3
 
@@ -84,17 +86,39 @@ showTwoDigit s
     digit = show s
 
 printDateTime :: DateTime -> String
-printDateTime (DateTime d t utc) = showTwoDigit (runYear $ year d)
-                                ++ showTwoDigit (runMonth $ month d)
-                                ++ showTwoDigit (runDay $ day d)
-                                ++ "T"
-                                ++ showTwoDigit (runHour $ hour t)
-                                ++ showTwoDigit (runMinute $ minute t)
-                                ++ showTwoDigit (runSecond $ second t)
-                                ++ (if utc then "Z" else "")
+printDateTime (DateTime d t utc) =
+  concat [showTwoDigit (runYear $ year d)
+        , showTwoDigit (runMonth $ month d)
+        , showTwoDigit (runDay $ day d)
+        , "T"
+        , showTwoDigit (runHour $ hour t)
+        , showTwoDigit (runMinute $ minute t)
+        , showTwoDigit (runSecond $ second t)
+        , if utc then "Z" else ""]
 
-test = run parseDateTime (printDateTime testDt) == Just testDt
+checkMonthDay :: Year -> Month -> Day -> Bool
+checkMonthDay y (Month m) (Day d)
+  | m == 2 && ((isLeapYear y && d <= 29) || d <= 28) = True
+  | m `elem` [1, 3, 5, 7, 8, 10, 12] && d <= 31 = True
+  | m `elem` [4, 6, 9, 11] && d <= 30 = True
+  | otherwise = False
+
+isLeapYear :: Year -> Bool
+isLeapYear (Year year) = (year `mod` 4 == 0) && ((year `mod` 400 == 0) || (mod year 100 /= 0))
 
 -- Exercise 5
 checkDateTime :: DateTime -> Bool
-checkDateTime = undefined
+checkDateTime (DateTime d t utc) =
+  year'   >= 1 &&
+  day'    >= 1 &&
+  hour'   >= 0 && hour'   <= 23 &&
+  minute' >= 0 && minute' <= 59 &&
+  second' >= 0 && second' <= 59 &&
+  checkMonthDay (year d) (month d) (day d)
+  where
+    year'   = runYear   $ year   d
+    month'  = runMonth  $ month  d
+    day'    = runDay    $ day    d
+    hour'   = runHour   $ hour   t
+    minute' = runMinute $ minute t
+    second' = runSecond $ second t
