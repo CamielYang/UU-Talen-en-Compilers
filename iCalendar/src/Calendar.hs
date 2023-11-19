@@ -57,12 +57,6 @@ calendarStaysSame = printCalendar calendar == calendarString
 printCalendarTest :: IO ()
 printCalendarTest = putStrLn $ printCalendar calendar
 
-eventDt :: DateTime
-eventDt = (DateTime {date = Date {year = Year {runYear = 1997}, month = Month {runMonth = 7}, day = Day {runDay = 15}}, time = Time {hour = Hour {runHour = 3}, minute = Minute {runMinute = 0}, second = Second {runSecond = 0}}, utc = True})
-
-test :: [Event]
-test = calendarEventsInRange calendar eventDt
-
 firstEvent :: Event
 firstEvent = head $ events calendar
 
@@ -80,17 +74,17 @@ continueNewLine = newLines <* symbol ' '
 identifier' :: Parser Char String
 identifier' = greedy (satisfy (\c -> isAscii c && not (isNewLine c)))
 
-character :: Parser Char [String]
-character = (:) <$> identifier' <* newLines <*> character'
+parseValue :: Parser Char [String]
+parseValue = (:) <$> identifier' <* newLines <*> parseValue'
   where
-    character' = greedy (symbol ' ' *> identifier' <* newLines)
+    parseValue' = greedy (symbol ' ' *> identifier' <* newLines)
 
 -- Calendar
 parseVersion :: Parser Char CalendarProp
-parseVersion = Version . concat <$ token "VERSION:" <*> character
+parseVersion = Version . concat <$ token "VERSION:" <*> parseValue
 
 parseProdId :: Parser Char CalendarProp
-parseProdId = ProdId . concat <$ token "PRODID:" <*> character
+parseProdId = ProdId . concat <$ token "PRODID:" <*> parseValue
 
 parseCalendarProp :: Parser Char CalendarProp
 parseCalendarProp = parseProdId <|> parseVersion
@@ -100,7 +94,7 @@ parseDtStamp :: Parser Char EventProp
 parseDtStamp = DtStamp <$ token "DTSTAMP:" <*> parseDateTime <* newLines
 
 parseUid :: Parser Char EventProp
-parseUid = Uid . concat <$ token "UID:" <*> character
+parseUid = Uid . concat <$ token "UID:" <*> parseValue
 
 parseDtStart :: Parser Char EventProp
 parseDtStart = DtStart <$ token "DTSTART:" <*> parseDateTime <* newLines
@@ -109,13 +103,13 @@ parseDtEnd :: Parser Char EventProp
 parseDtEnd = DtEnd <$ token "DTEND:" <*> parseDateTime <* newLines
 
 parseDescription :: Parser Char EventProp
-parseDescription = Description . concat <$ token "DESCRIPTION:" <*> character
+parseDescription = Description . concat <$ token "DESCRIPTION:" <*> parseValue
 
 parseSummary :: Parser Char EventProp
-parseSummary = Summary . concat <$ token "SUMMARY:" <*> character
+parseSummary = Summary . concat <$ token "SUMMARY:" <*> parseValue
 
 parseLocation :: Parser Char EventProp
-parseLocation = Location . concat <$ token "LOCATION:" <*> character
+parseLocation = Location . concat <$ token "LOCATION:" <*> parseValue
 
 parseEventProp :: Parser Char EventProp
 parseEventProp = parseDtStamp
@@ -135,11 +129,12 @@ parseEvent =
 
 tCalendar :: Parser Char Token
 tCalendar =
-  Token <$> (Calendar
-              <$ token "BEGIN:VCALENDAR" <* newLines
-              <*> many parseCalendarProp
-              <*> many parseEvent
-              <* token "END:VCALENDAR" <* newLines)
+  Token
+    <$> (Calendar
+          <$ token "BEGIN:VCALENDAR" <* newLines
+          <*> many parseCalendarProp
+          <*> many parseEvent
+          <* token "END:VCALENDAR" <* newLines)
 
 scanCalendar :: Parser Char [Token]
 scanCalendar = many tCalendar
@@ -269,34 +264,41 @@ getTotalEventDuration (Calendar { events = es }) summary =
     g (Summary s) = s == summary
     g _           = False
 
-table :: [[CalendarDay]] -> Box
-table sss = sep // punctuateV left sep cs // sep where
-    sep = text (take width (cycle ("+" ++ replicate 14 '-')))
-    width = 14 * length (head sss) + 8
-    cs = map column sss
+-- Exercise 10
+size :: Int
+size = 12
 
-dayBlock :: CalendarDay -> Box
-dayBlock (Day d, es) = vcat left (renderDay : renderEvents)
+reshape :: Int -> [a] -> [[a]]
+reshape n = unfoldr split
   where
-    renderDay = alignHoriz left 14 $ text $ show d
-    renderEvents = map (alignHoriz left 14 . text . ppEvent) es
-
-column :: [CalendarDay] -> Box
-column ss = sep <> punctuateH left sep (map dayBlock ss) <> sep
-  where
-    sep = vtext $ replicate height '|'
-    height = 1 + maxPosOn (\(_, es) -> length es) ss
+    split [] = Nothing
+    split xs = Just (splitAt n xs)
 
 vtext :: String -> Box
 vtext = vcat left . map char
 
-maxPosOn :: (a -> Int) -> [a] -> Int
-maxPosOn f = maximum . (0:) . map f
+maximum' :: (a -> Int) -> [a] -> Int
+maximum' _ [] = 0
+maximum' f xs = (maximum . map f) xs
 
-reshape :: Int -> [a] -> [[a]]
-reshape n = unfoldr phi where
-    phi [] = Nothing
-    phi xs = Just (splitAt n xs)
+renderDay :: CalendarDay -> Box
+renderDay (Day d, es) = vcat left (renderDay : renderEvents)
+  where
+    renderDay = alignHoriz left size $ text $ show d
+    renderEvents = map (alignHoriz left size . text . ppEvent) es
+
+renderWeek :: [CalendarDay] -> Box
+renderWeek ss = sep <> punctuateH left sep (map renderDay ss) <> sep
+  where
+    sep = vtext $ replicate height '|'
+    height = 1 + maximum' (\(_, es) -> length es) ss
+
+renderTable :: [[CalendarDay]] -> Box
+renderTable cds = sep // punctuateV left sep weeks // sep
+  where
+    width = size * length (head cds) + 8
+    sep = text (take width (cycle ("+" ++ replicate size '-')))
+    weeks = map renderWeek cds
 
 getCalendarMonthEvents :: Calendar -> Year -> Month -> [Event]
 getCalendarMonthEvents (Calendar { events = es }) y m = filter f es
@@ -322,9 +324,8 @@ ppDay :: Day -> [Event] -> String
 ppDay (Day d) es = show d ++ concatMap ppEvent es
 
 ppMonth :: Year -> Month -> String
-ppMonth y m = render $ table (reshape 7 [(Day d, filterEventsDay events (Day d)) | d <- [1..days]])
+ppMonth y m = render $ renderTable (reshape 7 [(Day d, filterEventsDay events (Day d)) | d <- [1..days]])
   where
-    filter' = filterEventsDay events (Day 12)
     events = getCalendarMonthEvents calendar y m
     days = getDays y m
 
