@@ -106,14 +106,6 @@ checkMonthDay y (Month m) (Day d)
   | m `elem` [4, 6, 9, 11] && d <= 30 = True
   | otherwise = False
 
-getDays :: Year -> Month -> Int
-getDays y (Month m)
-  | m == 2 && isLeapYear y = 29
-  | m == 2 = 28
-  | m `elem` [1, 3, 5, 7, 8, 10, 12] = 31
-  | m `elem` [4, 6, 9, 11] = 30
-  | otherwise = 0
-
 isLeapYear :: Year -> Bool
 isLeapYear (Year year) = (year `mod` 4 == 0) && ((year `mod` 400 == 0) || (mod year 100 /= 0))
 
@@ -133,3 +125,16 @@ checkDateTime (DateTime d t utc) =
     hour'   = runHour   $ hour   t
     minute' = runMinute $ minute t
     second' = runSecond $ second t
+
+-- Exercise 10
+getDays :: Year -> Month -> Int
+getDays y (Month m)
+  | m == 2 && isLeapYear y = 29
+  | m == 2 = 28
+  | m `elem` [1, 3, 5, 7, 8, 10, 12] = 31
+  | m `elem` [4, 6, 9, 11] = 30
+  | otherwise = 0
+
+humanReadableTime :: DateTime -> String
+humanReadableTime (DateTime _ (Time (Hour h) (Minute m) _) _) =
+  show h ++ ":" ++ show m

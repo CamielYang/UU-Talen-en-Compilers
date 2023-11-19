@@ -36,6 +36,8 @@ data EventProp = DtStamp     DateTime
 
 data Event = Event { eventProps :: [EventProp] } deriving (Eq, Ord, Show)
 
+type CalendarDay = (Day, [Event])
+
 -- Exercise 7
 data Token = Token Calendar
   deriving (Eq, Ord, Show)
@@ -267,21 +269,26 @@ getTotalEventDuration (Calendar { events = es }) summary =
     g (Summary s) = s == summary
     g _           = False
 
+table :: [[CalendarDay]] -> Box
+table sss = sep // punctuateV left sep cs // sep where
+    sep = text (take width (cycle ("+" ++ replicate 14 '-')))
+    width = 14 * length (head sss) + 8
+    cs = map column sss
 
-table :: [[String]] -> Box
-table sss = border <> punctuateH left sep cs <> border where
-    border = vtext (take height (cycle "|"))
-    sep = vtext (take height (cycle "|"))
-    height = maxPosOn rows cs
-    cs = map column (transpose sss)
+dayBlock :: CalendarDay -> Box
+dayBlock (Day d, es) = vcat left (renderDay : renderEvents)
+  where
+    renderDay = alignHoriz left 14 $ text $ show d
+    renderEvents = map (alignHoriz left 14 . text . ppEvent) es
 
-column :: [String] -> Box
-column ss = sep // punctuateV left sep (map (\x -> trace (show $ length $ columns left 1 5 x) $ head $ columns left 1 5 x) ss) // sep where
-    sep = text $ replicate (maxPosOn length ss + 2) '-'
-
+column :: [CalendarDay] -> Box
+column ss = sep <> punctuateH left sep (map dayBlock ss) <> sep
+  where
+    sep = vtext $ replicate height '|'
+    height = 1 + maxPosOn (\(_, es) -> length es) ss
 
 vtext :: String -> Box
-vtext = vcat center1 . map char
+vtext = vcat left . map char
 
 maxPosOn :: (a -> Int) -> [a] -> Int
 maxPosOn f = maximum . (0:) . map f
@@ -306,18 +313,19 @@ filterEventsDay es d = filter f es
         (DateTime (Date _ _ d') _ _) = getDtStart e
 
 ppEvent :: Event -> String
-ppEvent (Event es) = dts
+ppEvent (Event es) = ts ++ "-" ++ te
   where
-    dts = show $ getDtStart (Event es)
+    ts = humanReadableTime $ getDtStart (Event es)
+    te = humanReadableTime $ getDtEnd (Event es)
 
 ppDay :: Day -> [Event] -> String
 ppDay (Day d) es = show d ++ concatMap ppEvent es
 
 ppMonth :: Year -> Month -> String
-ppMonth y m = render $ table (reshape 7 [show d ++ "\nTest\nTest" | d <- [1..days]])
+ppMonth y m = render $ table (reshape 7 [(Day d, filterEventsDay events (Day d)) | d <- [1..days]])
   where
     filter' = filterEventsDay events (Day 12)
     events = getCalendarMonthEvents calendar y m
     days = getDays y m
 
-test' = putStrLn $ ppMonth (Year 2015) (Month 12)
+test' = putStrLn $ ppMonth (Year 2012) (Month 11)
