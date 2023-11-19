@@ -4,20 +4,18 @@
 -- cat examples/bastille.ics | cabal run
 -- Feel free to use ghci instead, or to change functions here to test whatever you want.
 -- We'll ignore anything in this file when grading!
+{-# LANGUAGE InstanceSigs #-}
 
 module Main where
 
-import DateTime
-import Calendar
-import Features
-import System.Environment
-import System.IO
+import           Calendar
+import           DateTime
+import           Features
+import           System.Environment
+import           System.IO
 
 
 data Result = SyntaxError | Invalid DateTime | Valid DateTime deriving (Eq, Ord)
-
-instance Show DateTime where
-    show = printDateTime
 
 instance Show Result where
     show SyntaxError = "date/time with wrong syntax"
@@ -27,7 +25,7 @@ instance Show Result where
 main :: IO ()
 main = do
   setNewlineTranslations
-  mainDateTime
+  mainCalendar
 
 mainDateTime :: IO ()
 mainDateTime = interact (printOutput . processCheck . processInput)

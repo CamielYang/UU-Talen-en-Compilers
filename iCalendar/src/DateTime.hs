@@ -8,7 +8,10 @@ import           Prelude           hiding (sequence, ($>), (*>), (<$), (<*))
 data DateTime = DateTime { date :: Date
                          , time :: Time
                          , utc  :: Bool }
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord)
+
+instance Show DateTime where
+    show = printDateTime
 
 data Date = Date { year  :: Year
                  , month :: Month
@@ -60,8 +63,8 @@ parseUTC :: Parser Char Bool
 parseUTC = (True <$ symbol 'Z') <|> (False <$ epsilon)
 
 parseDateTime :: Parser Char DateTime
-parseDateTime = (\a _ c d -> DateTime a c d) <$>
-                parseDate <*> symbol 'T' <*> parseTime <*> parseUTC
+parseDateTime = DateTime <$>
+                parseDate <* symbol 'T' <*> parseTime <*> parseUTC
 
 -- Exercise 2
 run :: Parser a b -> [a] -> Maybe b
