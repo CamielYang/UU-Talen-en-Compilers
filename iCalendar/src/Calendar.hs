@@ -7,6 +7,7 @@ import           Data.Char              (isAlpha, isAlphaNum, isAscii,
 import           Data.Either            (partitionEithers)
 import           Data.List
 import           Data.Maybe             (fromJust, fromMaybe)
+import           Data.Sequence          (Seq (Empty))
 import           DateTime
 import           Debug.Trace
 import           ParseLib.Abstract
@@ -36,7 +37,9 @@ data EventProp = DtStamp     DateTime
 
 data Event = Event { eventProps :: [EventProp] } deriving (Eq, Ord, Show)
 
-type CalendarDay = (Day, [Event])
+data CalendarDay = EmptyDay
+                 | CDay Day deriving (Eq, Ord, Show)
+type CalendarDayBlock = (CalendarDay, [Event])
 
 -- Exercise 7
 data Token = Token Calendar
@@ -266,7 +269,7 @@ getTotalEventDuration (Calendar { events = es }) summary =
 
 -- Exercise 10
 size :: Int
-size = 12
+size = 11
 
 reshape :: Int -> [a] -> [[a]]
 reshape n = unfoldr split
@@ -281,19 +284,26 @@ maximum' :: (a -> Int) -> [a] -> Int
 maximum' _ [] = 0
 maximum' f xs = (maximum . map f) xs
 
-renderDay :: CalendarDay -> Box
-renderDay (Day d, es) = vcat left (renderDay : renderEvents)
+ppEvent :: Event -> String
+ppEvent (Event es) = ts ++ "-" ++ te
+  where
+    ts = humanReadableTime $ getDtStart (Event es)
+    te = humanReadableTime $ getDtEnd (Event es)
+
+renderDay :: CalendarDayBlock -> Box
+renderDay (EmptyDay, _) = emptyBox 1 size
+renderDay (CDay (Day d), es) = vcat left (renderDay : renderEvents)
   where
     renderDay = alignHoriz left size $ text $ show d
     renderEvents = map (alignHoriz left size . text . ppEvent) es
 
-renderWeek :: [CalendarDay] -> Box
+renderWeek :: [CalendarDayBlock] -> Box
 renderWeek ss = sep <> punctuateH left sep (map renderDay ss) <> sep
   where
-    sep = vtext $ replicate height '|'
     height = 1 + maximum' (\(_, es) -> length es) ss
+    sep = vtext $ replicate height '|'
 
-renderTable :: [[CalendarDay]] -> Box
+renderTable :: [[CalendarDayBlock]] -> Box
 renderTable cds = sep // punctuateV left sep weeks // sep
   where
     width = size * length (head cds) + 8
@@ -314,19 +324,13 @@ filterEventsDay es d = filter f es
       where
         (DateTime (Date _ _ d') _ _) = getDtStart e
 
-ppEvent :: Event -> String
-ppEvent (Event es) = ts ++ "-" ++ te
-  where
-    ts = humanReadableTime $ getDtStart (Event es)
-    te = humanReadableTime $ getDtEnd (Event es)
-
-ppDay :: Day -> [Event] -> String
-ppDay (Day d) es = show d ++ concatMap ppEvent es
-
 ppMonth :: Year -> Month -> String
-ppMonth y m = render $ renderTable (reshape 7 [(Day d, filterEventsDay events (Day d)) | d <- [1..days]])
+ppMonth y m = render $ renderTable (reshape 7 $ [createCDay d | d <- [1..35]])
   where
     events = getCalendarMonthEvents calendar y m
     days = getDays y m
+    createCDay d
+      | d <= days = (CDay $ Day d, filterEventsDay events (Day d))
+      | otherwise = (EmptyDay, [])
 
 test' = putStrLn $ ppMonth (Year 2012) (Month 11)

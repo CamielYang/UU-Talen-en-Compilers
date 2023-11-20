@@ -24,7 +24,8 @@ library icalendar
                        base >=4.14,
                        boxes,
                        containers,
-                       uu-tc == 2015.1.1
+                       uu-tc == 2015.1.1,
+                       time
 
   hs-source-dirs:      src
 

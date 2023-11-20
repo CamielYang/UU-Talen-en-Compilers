@@ -137,4 +137,4 @@ getDays y (Month m)
 
 humanReadableTime :: DateTime -> String
 humanReadableTime (DateTime _ (Time (Hour h) (Minute m) _) _) =
-  show h ++ ":" ++ show m
+  showTwoDigit h ++ ":" ++ showTwoDigit m
