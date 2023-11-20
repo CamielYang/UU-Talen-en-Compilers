@@ -105,10 +105,12 @@ timeSpent summary (Calendar { events = es }) =
     g _           = False
 
 -- Exercise 10
-size, padding, contentSize :: Int
-padding = 1
+paddingSize,
+  contentSize,
+  totalSize :: Int
+paddingSize = 1
 contentSize = 11
-size = contentSize + (2 * padding)
+totalSize   = contentSize + (2 * paddingSize)
 
 reshape :: Int -> [a] -> [[a]]
 reshape n = unfoldr split
@@ -130,24 +132,30 @@ ppEvent (Event es) = ts ++ "-" ++ te
     te = humanReadableTime $ getDtEnd (Event es)
 
 renderDay :: CalendarDayBlock -> Box
-renderDay (EmptyDay, _) = emptyBox 1 size
-renderDay (CDay (Day d), es) = padding' <> vcat left (renderDay : renderEvents) <> padding'
+renderDay (EmptyDay, _) = emptyBox 1 totalSize
+renderDay (CDay (Day d), es) = padding <> vcat left (day : emptyLine : events) <> padding
   where
-    padding' = text $ replicate padding ' '
-    renderDay = alignHoriz left contentSize $ text $ show d
-    renderEvents = map (alignHoriz left contentSize . text . ppEvent) es
+    padding = text $ replicate paddingSize ' '
+    day = alignHoriz left contentSize $ text $ show d
+    emptyLine = alignHoriz left contentSize $ emptyBox 1 1
+    events = map (alignHoriz left contentSize . text . ppEvent) es
 
 renderWeek :: [CalendarDayBlock] -> Box
 renderWeek ss = sep <> punctuateH left sep (map renderDay ss) <> sep
   where
-    height = 1 + maximum' (\(_, es) -> length es) ss
+    height = 2 + maximum' (\(_, es) -> length es) ss
     sep = vtext $ replicate height '|'
 
-renderTable :: [[CalendarDayBlock]] -> Box
-renderTable cds = sep // punctuateV left sep weeks // sep
+renderHeader :: Box
+renderHeader = sep <> punctuateH left sep (map (alignHoriz center1 totalSize . text . show) [DT.Monday .. DT.Sunday]) <> sep
   where
-    width = size * length (head cds) + 8
-    sep = text (take width (cycle ("+" ++ replicate size '-')))
+    sep = char '|'
+
+renderTable :: [[CalendarDayBlock]] -> Box
+renderTable cds = sep // punctuateV left sep (renderHeader : weeks) // sep
+  where
+    width = totalSize * length (head cds) + 8
+    sep = text (take width (cycle ("+" ++ replicate totalSize '-')))
     weeks = map renderWeek cds
 
 getCalendarMonthEvents :: Calendar -> Year -> Month -> [Event]
@@ -167,13 +175,15 @@ filterEventsDay es d = filter f es
 ppMonth :: Year -> Month -> Calendar -> String
 ppMonth y m c = render $ renderTable (reshape 7 $ fillStartDays ++ [createCDay d | d <- [1..(35-skipDays)]])
   where
+    emptyDay = (EmptyDay, [])
     events = getCalendarMonthEvents c y m
     days = getDays y m
     skipDays = let Day d = firstDayOfMonth y m in d-1
     fillStartDays = replicate skipDays emptyDay
-    emptyDay = (EmptyDay, [])
     createCDay d
       | d <= days = (CDay $ Day d, filterEventsDay events (Day d))
       | otherwise = emptyDay
 
-test' = putStrLn $ ppMonth (Year 2012) (Month 11) calendar
+-- Test functions
+test = putStrLn $ ppMonth (Year 2012) (Month 11) calendar
+test2 = putStrLn $ ppMonth (Year 2023) (Month 11) calendar
