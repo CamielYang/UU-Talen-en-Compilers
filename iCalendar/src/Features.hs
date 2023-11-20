@@ -2,6 +2,7 @@ module Features where
 
 import           Calendar
 import           Data.List
+import           Data.Maybe
 import qualified Data.Time              as DT
 import           Data.Time.Format       as DT
 import           DateTime
@@ -196,5 +197,11 @@ ppMonth y m c = render (renderTable y m (reshape 7 $ fillStartDays ++ [createCDa
       | otherwise = emptyDay
 
 -- Test functions
-test = putStrLn $ ppMonth (Year 2012) (Month 11) calendar
-test2 = putStrLn $ ppMonth (Year 2023) (Month 11) calendar
+bastillePath = "examples/bastille.ics"
+multiLinePath = "examples/multiline.ics"
+newYearPath = "examples/newyear.ics"
+roosterPath = "examples/rooster_infotc.ics"
+
+testPrint year month filepath = do
+  calendar <- readCalendar filepath
+  putStrLn $ ppMonth (Year year) (Month month) (fromJust calendar)
