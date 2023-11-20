@@ -63,20 +63,6 @@ dateTimeToMinutes (DateTime
     _) _) =
   (y * 365 * 24 * 60) + (m * 30 * 24 * 60) + (d * 24 * 60) + (h * 60) + mi
 
-firstDayOfMonth :: Year -> Month -> Day
-firstDayOfMonth (Year y) (Month m) = case weekday of
-  "Mon" -> Day 1
-  "Tue" -> Day 2
-  "Wed" -> Day 3
-  "Thu" -> Day 4
-  "Fri" -> Day 5
-  "Sat" -> Day 6
-  "Sun" -> Day 7
-  _     -> error "Unexpected weekday"
-  where
-    date = DT.fromGregorian (integerFromInt y) m 1
-    weekday = DT.formatTime DT.defaultTimeLocale "%a" date
-
 countEvents :: Calendar -> Int
 countEvents (Calendar { events = es }) = length es
 
@@ -103,6 +89,16 @@ timeSpent summary (Calendar { events = es }) =
       Just _  -> True
     g (Summary s) = s == summary
     g _           = False
+
+firstDayOfMonth :: Year -> Month -> Day
+firstDayOfMonth (Year y) (Month m) = Day weekday
+  where
+    date = DT.fromGregorian (integerFromInt y) m 1
+    weekday = read $ DT.formatTime DT.defaultTimeLocale "%u" date :: Int
+
+humanReadableTime :: DateTime -> String
+humanReadableTime (DateTime _ (Time (Hour h) (Minute m) _) _) =
+  showTwoDigit h ++ ":" ++ showTwoDigit m
 
 -- Exercise 10
 paddingSize,
@@ -131,13 +127,15 @@ ppEvent (Event es) = ts ++ "-" ++ te
     ts = humanReadableTime $ getDtStart (Event es)
     te = humanReadableTime $ getDtEnd (Event es)
 
+emptyLine :: Box
+emptyLine = emptyBox 1 1
+
 renderDay :: CalendarDayBlock -> Box
 renderDay (EmptyDay, _) = emptyBox 1 totalSize
 renderDay (CDay (Day d), es) = padding <> vcat left (day : emptyLine : events) <> padding
   where
     padding = text $ replicate paddingSize ' '
     day = alignHoriz left contentSize $ text $ show d
-    emptyLine = alignHoriz left contentSize $ emptyBox 1 1
     events = map (alignHoriz left contentSize . text . ppEvent) es
 
 renderWeek :: [CalendarDayBlock] -> Box
@@ -147,13 +145,25 @@ renderWeek ss = sep <> punctuateH left sep daysBoxes <> sep
     height = maximum' rows daysBoxes
     sep = vtext $ replicate height '|'
 
-renderHeader :: Box
-renderHeader = sep <> punctuateH left sep (map (alignHoriz center1 totalSize . text . show) [DT.Monday .. DT.Sunday]) <> sep
+renderHeader :: Year -> Month -> Box
+renderHeader (Year y) (Month m) = sep <> vcat left boxes <> sep
+  where
+    date = DT.fromGregorian (integerFromInt y) m 1
+    weekday = DT.formatTime DT.defaultTimeLocale "%B %Y" date
+    boxes = [
+        emptyLine,
+        alignHoriz center1 (totalSize * 7 + 6) (text weekday),
+        emptyLine
+      ]
+    sep = vtext $ replicate (length boxes) '|'
+
+renderWeekdays :: Box
+renderWeekdays = sep <> punctuateH left sep (map (alignHoriz center1 totalSize . text . show) [DT.Monday .. DT.Sunday]) <> sep
   where
     sep = char '|'
 
-renderTable :: [[CalendarDayBlock]] -> Box
-renderTable cds = sep // punctuateV left sep (renderHeader : weeks) // sep
+renderTable :: Year -> Month -> [[CalendarDayBlock]] -> Box
+renderTable y m cds = sep // punctuateV left sep (renderHeader y m : renderWeekdays : weeks) // sep
   where
     width = totalSize * length (head cds) + 8
     sep = text (take width (cycle ("+" ++ replicate totalSize '-')))
@@ -174,7 +184,7 @@ filterEventsDay es d = filter f es
         (DateTime (Date _ _ d') _ _) = getDtStart e
 
 ppMonth :: Year -> Month -> Calendar -> String
-ppMonth y m c = render $ renderTable (reshape 7 $ fillStartDays ++ [createCDay d | d <- [1..(35-skipDays)]])
+ppMonth y m c = render (renderTable y m (reshape 7 $ fillStartDays ++ [createCDay d | d <- [1..(35-skipDays)]]))
   where
     emptyDay = (EmptyDay, [])
     events = getCalendarMonthEvents c y m

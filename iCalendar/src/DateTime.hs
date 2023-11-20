@@ -99,15 +99,19 @@ printDateTime (DateTime d t utc) =
         , showTwoDigit (runSecond $ second t)
         , if utc then "Z" else ""]
 
-checkMonthDay :: Year -> Month -> Day -> Bool
-checkMonthDay y (Month m) (Day d)
-  | m == 2 && ((isLeapYear y && d <= 29) || d <= 28) = True
-  | m `elem` [1, 3, 5, 7, 8, 10, 12] && d <= 31 = True
-  | m `elem` [4, 6, 9, 11] && d <= 30 = True
-  | otherwise = False
-
 isLeapYear :: Year -> Bool
 isLeapYear (Year year) = (year `mod` 4 == 0) && ((year `mod` 400 == 0) || (mod year 100 /= 0))
+
+getDays :: Year -> Month -> Int
+getDays y (Month m)
+  | m == 2 && isLeapYear y = 29
+  | m == 2 = 28
+  | m `elem` [1, 3, 5, 7, 8, 10, 12] = 31
+  | m `elem` [4, 6, 9, 11] = 30
+  | otherwise = 0
+
+checkValidDay :: Year -> Month -> Day -> Bool
+checkValidDay y m@(Month m') (Day d) = d <= getDays y m
 
 -- Exercise 5
 checkDateTime :: DateTime -> Bool
@@ -117,7 +121,7 @@ checkDateTime (DateTime d t utc) =
   hour'   >= 0 && hour'   <= 23 &&
   minute' >= 0 && minute' <= 59 &&
   second' >= 0 && second' <= 59 &&
-  checkMonthDay (year d) (month d) (day d)
+  checkValidDay (year d) (month d) (day d)
   where
     year'   = runYear   $ year   d
     month'  = runMonth  $ month  d
@@ -125,16 +129,3 @@ checkDateTime (DateTime d t utc) =
     hour'   = runHour   $ hour   t
     minute' = runMinute $ minute t
     second' = runSecond $ second t
-
--- Exercise 10
-getDays :: Year -> Month -> Int
-getDays y (Month m)
-  | m == 2 && isLeapYear y = 29
-  | m == 2 = 28
-  | m `elem` [1, 3, 5, 7, 8, 10, 12] = 31
-  | m `elem` [4, 6, 9, 11] = 30
-  | otherwise = 0
-
-humanReadableTime :: DateTime -> String
-humanReadableTime (DateTime _ (Time (Hour h) (Minute m) _) _) =
-  showTwoDigit h ++ ":" ++ showTwoDigit m
