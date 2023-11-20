@@ -141,9 +141,10 @@ renderDay (CDay (Day d), es) = padding <> vcat left (day : emptyLine : events) <
     events = map (alignHoriz left contentSize . text . ppEvent) es
 
 renderWeek :: [CalendarDayBlock] -> Box
-renderWeek ss = sep <> punctuateH left sep (map renderDay ss) <> sep
+renderWeek ss = sep <> punctuateH left sep daysBoxes <> sep
   where
-    height = 2 + maximum' (\(_, es) -> length es) ss
+    daysBoxes = map renderDay ss
+    height = maximum' rows daysBoxes
     sep = vtext $ replicate height '|'
 
 renderHeader :: Box
