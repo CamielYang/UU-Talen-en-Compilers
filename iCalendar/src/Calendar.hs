@@ -2,18 +2,17 @@
 {-# HLINT ignore "Use newtype instead of data" #-}
 module Calendar where
 
-import           Data.Char              (isAlpha, isAlphaNum, isAscii,
-                                         isControl, isSpace, isSymbol)
-import           Data.Either            (partitionEithers)
+import           Data.Char         (isAlpha, isAlphaNum, isAscii, isControl,
+                                    isSpace, isSymbol)
+import           Data.Either       (partitionEithers)
 import           Data.List
-import           Data.Maybe             (fromJust, fromMaybe)
-import           Data.Sequence          (Seq (Empty))
+import           Data.Maybe        (fromJust, fromMaybe)
+import           Data.Sequence     (Seq (Empty))
 import           DateTime
 import           Debug.Trace
 import           ParseLib.Abstract
-import           Prelude                hiding (sequence, ($>), (*>), (<$),
-                                         (<*), (<>))
-import           Text.PrettyPrint.Boxes
+import           Prelude           hiding (sequence, ($>), (*>), (<$), (<*),
+                                    (<>))
 
 
 -- Exercise 6
@@ -185,152 +184,3 @@ printCalendar c = "BEGIN:VCALENDAR\r\n"
                ++ printLines (calProp c) printCalendar'
                ++ concatMap printEvent (events c)
                ++ "END:VCALENDAR\r\n"
-
--- Exercise 9
-calendarEventCount :: Calendar -> Int
-calendarEventCount (Calendar { events = es }) = length es
-
-getDtStart :: Event -> DateTime
-getDtStart (Event es) = case find f es of
-  Nothing           -> error "Unexpected: dtStart not found"
-  Just (DtStart dt) -> dt
-  where
-    f (DtStart _) = True
-    f _           = False
-
-getDtEnd :: Event -> DateTime
-getDtEnd (Event es) = case find f es of
-  Nothing         -> error "Unexpected: dtEnd not found"
-  Just (DtEnd dt) -> dt
-  where
-    f (DtEnd _) = True
-    f _         = False
-
-calendarEventsInRange :: Calendar -> DateTime -> [Event]
-calendarEventsInRange (Calendar { events = es }) dt = filter f es
-  where
-    f e = dt >= getDtStart e && dt < getDtEnd e
-
-eventOverlaps :: Event -> Event -> Bool
-eventOverlaps e1 e2 =
-  (dts1 <= dts2 && dts2 <= dte1) ||
-  (dts2 <= dts1 && dts1 <= dte2)
-  where
-    dts1 = getDtStart e1
-    dts2 = getDtStart e2
-    dte1 = getDtEnd e1
-    dte2 = getDtEnd e2
-
-hasOverlappingEvents :: Calendar -> Bool
-hasOverlappingEvents (Calendar { events = es }) = hasOverlappingEvents' es
-  where
-    hasOverlappingEvents' []     = False
-    hasOverlappingEvents' (x:xs) =
-      case find (eventOverlaps x) xs of
-        Nothing -> hasOverlappingEvents' xs
-        Just _  -> True
-
-eventDuration :: Event -> DateTime
-eventDuration e = DateTime
-  (Date
-    (Year  (runYear  (year de)  - runYear  (year ds)))
-    (Month (runMonth (month de) - runMonth (month ds)))
-    (Day   (runDay   (day de)   - runDay   (day ds))))
-  (Time
-    (Hour   (runHour   (hour te)   - runHour   (hour ts)))
-    (Minute (runMinute (minute te) - runMinute (minute ts)))
-    (Second (runSecond (second te) - runSecond (second ts))))
-  utc
-  where
-    (DateTime ds ts utc) = getDtStart e
-    (DateTime de te _  ) = getDtEnd e
-
-dateTimeToMinutes :: DateTime -> Int
-dateTimeToMinutes (DateTime
-  (Date
-    (Year y)
-    (Month m)
-    (Day d))
-  (Time
-    (Hour h)
-    (Minute mi)
-    _) _) =
-  (y * 365 * 24 * 60) + (m * 30 * 24 * 60) + (d * 24 * 60) + (h * 60) + mi
-
-getTotalEventDuration :: Calendar -> String -> Int
-getTotalEventDuration (Calendar { events = es }) summary =
-  sum $ map (dateTimeToMinutes . eventDuration) (filter f es)
-  where
-    f (Event ps) = case find g ps of
-      Nothing -> False
-      Just _  -> True
-    g (Summary s) = s == summary
-    g _           = False
-
--- Exercise 10
-size :: Int
-size = 11
-
-reshape :: Int -> [a] -> [[a]]
-reshape n = unfoldr split
-  where
-    split [] = Nothing
-    split xs = Just (splitAt n xs)
-
-vtext :: String -> Box
-vtext = vcat left . map char
-
-maximum' :: (a -> Int) -> [a] -> Int
-maximum' _ [] = 0
-maximum' f xs = (maximum . map f) xs
-
-ppEvent :: Event -> String
-ppEvent (Event es) = ts ++ "-" ++ te
-  where
-    ts = humanReadableTime $ getDtStart (Event es)
-    te = humanReadableTime $ getDtEnd (Event es)
-
-renderDay :: CalendarDayBlock -> Box
-renderDay (EmptyDay, _) = emptyBox 1 size
-renderDay (CDay (Day d), es) = vcat left (renderDay : renderEvents)
-  where
-    renderDay = alignHoriz left size $ text $ show d
-    renderEvents = map (alignHoriz left size . text . ppEvent) es
-
-renderWeek :: [CalendarDayBlock] -> Box
-renderWeek ss = sep <> punctuateH left sep (map renderDay ss) <> sep
-  where
-    height = 1 + maximum' (\(_, es) -> length es) ss
-    sep = vtext $ replicate height '|'
-
-renderTable :: [[CalendarDayBlock]] -> Box
-renderTable cds = sep // punctuateV left sep weeks // sep
-  where
-    width = size * length (head cds) + 8
-    sep = text (take width (cycle ("+" ++ replicate size '-')))
-    weeks = map renderWeek cds
-
-getCalendarMonthEvents :: Calendar -> Year -> Month -> [Event]
-getCalendarMonthEvents (Calendar { events = es }) y m = filter f es
-  where
-    f e = y == y' && m == m'
-      where
-        (DateTime (Date y' m' _) _ _) = getDtStart e
-
-filterEventsDay :: [Event] -> Day -> [Event]
-filterEventsDay es d = filter f es
-  where
-    f e = d == d'
-      where
-        (DateTime (Date _ _ d') _ _) = getDtStart e
-
-ppMonth :: Year -> Month -> String
-ppMonth y m = render $ renderTable (reshape 7 $ [createCDay d | d <- [1..35]])
-  where
-    events = getCalendarMonthEvents calendar y m
-    days = getDays y m
-    createCDay d
-      | d <= days = (CDay $ Day d, filterEventsDay events (Day d))
-      | otherwise = (EmptyDay, [])
-
-test' = putStrLn $ ppMonth (Year 2012) (Month 11)
