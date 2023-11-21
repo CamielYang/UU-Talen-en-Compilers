@@ -1,5 +1,6 @@
 module DateTime where
 
+import           Control.Monad     hiding ((<$))
 import           Data.Char         (digitToInt)
 import           ParseLib.Abstract
 import           Prelude           hiding (sequence, ($>), (*>), (<$), (<*))
@@ -35,23 +36,26 @@ newtype Second = Second { runSecond :: Int } deriving (Eq, Ord, Show)
 digitsToInt :: [Int] -> Int
 digitsToInt = foldl (\acc x -> acc * 10 + x) 0
 
+parseDigits :: Int -> Parser Char Int
+parseDigits n = digitsToInt <$> replicateM n newdigit
+
 parseYear :: Parser Char Year
-parseYear = (\a b c d -> Year $ digitsToInt [a,b,c,d]) <$> newdigit <*> newdigit <*> newdigit <*> newdigit
+parseYear = Year <$> parseDigits 4
 
 parseMonth :: Parser Char Month
-parseMonth = (\a b -> Month $ digitsToInt [a,b]) <$> newdigit <*> newdigit
+parseMonth = Month <$> parseDigits 2
 
 parseDay :: Parser Char Day
-parseDay = (\a b -> Day $ digitsToInt [a,b]) <$> newdigit <*> newdigit
+parseDay = Day <$> parseDigits 2
 
 parseHour :: Parser Char Hour
-parseHour = (\a b -> Hour $ digitsToInt [a,b]) <$> newdigit <*> newdigit
+parseHour = Hour <$> parseDigits 2
 
 parseMinute :: Parser Char Minute
-parseMinute = (\a b -> Minute $ digitsToInt [a,b]) <$> newdigit <*> newdigit
+parseMinute = Minute <$> parseDigits 2
 
 parseSecond :: Parser Char Second
-parseSecond = (\a b -> Second $ digitsToInt [a,b]) <$> newdigit <*> newdigit
+parseSecond = Second <$> parseDigits 2
 
 parseDate :: Parser Char Date
 parseDate = Date <$> parseYear <*> parseMonth <*> parseDay
