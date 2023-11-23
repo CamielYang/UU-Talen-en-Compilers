@@ -11,31 +11,15 @@ import           Prelude                hiding ((<>))
 import           Text.PrettyPrint.Boxes
 
 -- Exercise 9
-getDtStart :: Event -> DateTime
-getDtStart (Event es) = case find f es of
-  Nothing           -> error "Unexpected: dtStart not found"
-  Just (DtStart dt) -> dt
-  where
-    f (DtStart _) = True
-    f _           = False
-
-getDtEnd :: Event -> DateTime
-getDtEnd (Event es) = case find f es of
-  Nothing         -> error "Unexpected: dtEnd not found"
-  Just (DtEnd dt) -> dt
-  where
-    f (DtEnd _) = True
-    f _         = False
-
 eventOverlaps :: Event -> Event -> Bool
 eventOverlaps e1 e2 =
   (dts1 <= dts2 && dts2 <= dte1) ||
   (dts2 <= dts1 && dts1 <= dte2)
   where
-    dts1 = getDtStart e1
-    dts2 = getDtStart e2
-    dte1 = getDtEnd e1
-    dte2 = getDtEnd e2
+    dts1 = runDtStart $ dtStart e1
+    dts2 = runDtStart $ dtStart e2
+    dte1 = runDtEnd   $ dtEnd e1
+    dte2 = runDtEnd   $ dtEnd e2
 
 eventDuration :: Event -> DateTime
 eventDuration e = DateTime
@@ -49,8 +33,8 @@ eventDuration e = DateTime
     (Second (runSecond (second te) - runSecond (second ts))))
   utc
   where
-    (DateTime ds ts utc) = getDtStart e
-    (DateTime de te _  ) = getDtEnd e
+    (DtStart (DateTime ds ts utc)) = dtStart e
+    (DtEnd   (DateTime de te _  )) = dtEnd e
 
 dateTimeToMinutes :: DateTime -> Int
 dateTimeToMinutes (DateTime
@@ -70,7 +54,7 @@ countEvents (Calendar { events = es }) = length es
 findEvents :: DateTime -> Calendar -> [Event]
 findEvents dt (Calendar { events = es }) = filter f es
   where
-    f e = dt >= getDtStart e && dt < getDtEnd e
+    f e = dt >= runDtStart (dtStart e) && dt < runDtEnd (dtEnd e)
 
 checkOverlapping :: Calendar -> Bool
 checkOverlapping (Calendar { events = es }) = hasOverlappingEvents' es
@@ -82,14 +66,12 @@ checkOverlapping (Calendar { events = es }) = hasOverlappingEvents' es
         Just _  -> True
 
 timeSpent :: String -> Calendar -> Int
-timeSpent summary (Calendar { events = es }) =
+timeSpent summary' (Calendar { events = es }) =
   sum $ map (dateTimeToMinutes . eventDuration) (filter f es)
   where
-    f (Event ps) = case find g ps of
-      Nothing -> False
-      Just _  -> True
-    g (Summary s) = s == summary
-    g _           = False
+    f e = case runSummary (summary e) of
+      Nothing        -> False
+      Just summary'' -> summary'' == summary'
 
 firstDayOfMonth :: Year -> Month -> Day
 firstDayOfMonth (Year y) (Month m) = Day weekday
@@ -123,10 +105,10 @@ maximum' _ [] = 0
 maximum' f xs = (maximum . map f) xs
 
 ppEvent :: Event -> String
-ppEvent (Event es) = ts ++ "-" ++ te
+ppEvent e = ts ++ "-" ++ te
   where
-    ts = humanReadableTime $ getDtStart (Event es)
-    te = humanReadableTime $ getDtEnd (Event es)
+    ts = humanReadableTime $ runDtStart $ dtStart e
+    te = humanReadableTime $ runDtEnd   $ dtEnd e
 
 emptyLine :: Box
 emptyLine = emptyBox 1 1
@@ -175,14 +157,14 @@ getCalendarMonthEvents (Calendar { events = es }) y m = filter f es
   where
     f e = y == y' && m == m'
       where
-        (DateTime (Date y' m' _) _ _) = getDtStart e
+        (DateTime (Date y' m' _) _ _) = runDtStart $ dtStart e
 
 filterEventsDay :: [Event] -> Day -> [Event]
 filterEventsDay es d = filter f es
   where
     f e = d == d'
       where
-        (DateTime (Date _ _ d') _ _) = getDtStart e
+        (DateTime (Date _ _ d') _ _) = runDtStart $ dtStart e
 
 ppMonth :: Year -> Month -> Calendar -> String
 ppMonth y m c = render (renderTable y m (reshape 7 $ fillStartDays ++ [createCDay d | d <- [1..(35-skipDays)]]))

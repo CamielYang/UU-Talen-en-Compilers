@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
+{-# HLINT ignore "Use void" #-}
 module Calendar where
 
 import           Data.Char         (isAlpha, isAlphaNum, isAscii, isControl,
@@ -16,32 +17,52 @@ import           Prelude           hiding (sequence, ($>), (*>), (<$), (<*),
 
 
 -- Exercise 6
-data Calendar = Calendar {
-  calProp :: [CalendarProp],
-  events  :: [Event]
+data DtStamp = DtStamp { runDtStamp :: DateTime } deriving (Eq, Ord, Show)
+data Uid     = Uid     { runUid     :: String   } deriving (Eq, Ord, Show)
+data DtStart = DtStart { runDtStart :: DateTime } deriving (Eq, Ord, Show)
+data DtEnd   = DtEnd   { runDtEnd   :: DateTime } deriving (Eq, Ord, Show)
+
+data Description = Description { runDescription :: Maybe String } deriving (Eq, Ord, Show)
+data Summary     = Summary     { runSummary     :: Maybe String } deriving (Eq, Ord, Show)
+data Location    = Location    { runLocation    :: Maybe String } deriving (Eq, Ord, Show)
+
+data Event = Event {
+  dtStamp     :: DtStamp,
+  uid         :: Uid,
+  dtStart     :: DtStart,
+  dtEnd       :: DtEnd,
+  description :: Description,
+  summary     :: Summary,
+  location    :: Location
 } deriving (Eq, Ord, Show)
 
-data CalendarProp = Version String
-                  | ProdId  String
-                  deriving (Eq, Ord, Show)
+data Version = Version { runVersion :: String } deriving (Eq, Ord, Show)
+data ProdId  = ProdId  { runProdId  :: String } deriving (Eq, Ord, Show)
 
-data EventProp = DtStamp     DateTime
-               | Uid         String
-               | DtStart     DateTime
-               | DtEnd       DateTime
-               | Description String
-               | Summary     String
-               | Location    String
-               deriving (Eq, Ord, Show)
-
-data Event = Event { eventProps :: [EventProp] } deriving (Eq, Ord, Show)
+data Calendar = Calendar {
+  version :: Version,
+  prodId  :: ProdId,
+  events  :: [Event]
+} deriving (Eq, Ord, Show)
 
 data CalendarDay = EmptyDay
                  | CDay Day deriving (Eq, Ord, Show)
 type CalendarDayBlock = (CalendarDay, [Event])
 
 -- Exercise 7
-data Token = Token Calendar
+data Token = TBeginCalendar
+           | TEndCalendar
+           | TBeginEvent
+           | TEndEvent
+           | TVersion String
+           | TProdId String
+           | TDtStamp DateTime
+           | TUid String
+           | TDtStart DateTime
+           | TDtEnd DateTime
+           | TDescription String
+           | TSummary String
+           | TLocation String
   deriving (Eq, Ord, Show)
 
 -- Test data calendar
@@ -82,70 +103,184 @@ parseValue = (:) <$> identifier' <* newLines <*> parseValue'
     parseValue' = greedy (symbol ' ' *> identifier' <* newLines)
 
 -- Calendar
-parseVersion :: Parser Char CalendarProp
-parseVersion = Version . concat <$ token "VERSION:" <*> parseValue
+tBeginCalendar :: Parser Char Token
+tBeginCalendar = TBeginCalendar <$ token "BEGIN:VCALENDAR" <* newLines
 
-parseProdId :: Parser Char CalendarProp
-parseProdId = ProdId . concat <$ token "PRODID:" <*> parseValue
+tEndCalendar :: Parser Char Token
+tEndCalendar = TEndCalendar <$ token "END:VCALENDAR" <* newLines
 
-parseCalendarProp :: Parser Char CalendarProp
-parseCalendarProp = parseProdId <|> parseVersion
+tBeginEvent :: Parser Char Token
+tBeginEvent = TBeginEvent <$ token "BEGIN:VEVENT" <* newLines
+
+tEndEvent :: Parser Char Token
+tEndEvent = TEndEvent <$ token "END:VEVENT" <* newLines
+
+tVersion :: Parser Char Token
+tVersion = TVersion . concat <$ token "VERSION:" <*> parseValue
+
+tProdId :: Parser Char Token
+tProdId = TProdId . concat <$ token "PRODID:" <*> parseValue
+
+tDtStamp :: Parser Char Token
+tDtStamp = TDtStamp <$ token "DTSTAMP:" <*> parseDateTime <* newLines
+
+tUid :: Parser Char Token
+tUid = TUid . concat <$ token "UID:" <*> parseValue
+
+tDtStart :: Parser Char Token
+tDtStart = TDtStart <$ token "DTSTART:" <*> parseDateTime <* newLines
+
+tDtEnd :: Parser Char Token
+tDtEnd = TDtEnd <$ token "DTEND:" <*> parseDateTime <* newLines
+
+tDescription :: Parser Char Token
+tDescription = TDescription . concat <$ token "DESCRIPTION:" <*> parseValue
+
+tSummary :: Parser Char Token
+tSummary = TSummary . concat <$ token "SUMMARY:" <*> parseValue
+
+tLocation :: Parser Char Token
+tLocation = TLocation . concat <$ token "LOCATION:" <*> parseValue
+
+anyToken :: Parser Char Token
+anyToken = tBeginCalendar
+       <|> tEndCalendar
+       <|> tBeginEvent
+       <|> tEndEvent
+       <|> tVersion
+       <|> tProdId
+       <|> tDtStamp
+       <|> tUid
+       <|> tDtStart
+       <|> tDtEnd
+       <|> tDescription
+       <|> tSummary
+       <|> tLocation
+
+beginCalendar :: Parser Token ()
+beginCalendar = () <$ satisfy (== TBeginCalendar)
+
+endCalendar :: Parser Token ()
+endCalendar = () <$ satisfy (== TEndCalendar)
+
+beginEvent :: Parser Token ()
+beginEvent = () <$ satisfy (== TBeginEvent)
+
+endEvent :: Parser Token ()
+endEvent = () <$ satisfy (== TEndEvent)
+
+-- Calendar
+calendarProp :: Parser Token Token
+calendarProp = fromCalendarProp <$> satisfy isCalendarProp
+
+isCalendarProp :: Token -> Bool
+isCalendarProp (TProdId _)  = True
+isCalendarProp (TVersion _) = True
+isCalendarProp _            = False
+
+fromCalendarProp :: Token -> Token
+fromCalendarProp x@(TProdId _)  = x
+fromCalendarProp x@(TVersion _) = x
+fromCalendarProp _              = error "fromCalendarProp"
+
+findVersion :: [Token] -> Version
+findVersion []              = error "Version not found"
+findVersion (TVersion x:xs) = Version x
+findVersion (_:xs)          = findVersion xs
+
+findProdId :: [Token] -> ProdId
+findProdId []             = error "ProdId not found"
+findProdId (TProdId x:xs) = ProdId x
+findProdId (_:xs)         = findProdId xs
 
 -- Event
-parseDtStamp :: Parser Char EventProp
-parseDtStamp = DtStamp <$ token "DTSTAMP:" <*> parseDateTime <* newLines
+eventProp :: Parser Token Token
+eventProp = fromEventProp <$> satisfy isEventProp
 
-parseUid :: Parser Char EventProp
-parseUid = Uid . concat <$ token "UID:" <*> parseValue
+isEventProp :: Token -> Bool
+isEventProp (TDtStamp _)     = True
+isEventProp (TUid _)         = True
+isEventProp (TDtStart _)     = True
+isEventProp (TDtEnd _)       = True
+isEventProp (TDescription _) = True
+isEventProp (TSummary _)     = True
+isEventProp (TLocation _)    = True
+isEventProp _                = False
 
-parseDtStart :: Parser Char EventProp
-parseDtStart = DtStart <$ token "DTSTART:" <*> parseDateTime <* newLines
+fromEventProp :: Token -> Token
+fromEventProp x@(TDtStamp _)     = x
+fromEventProp x@(TUid _)         = x
+fromEventProp x@(TDtStart _)     = x
+fromEventProp x@(TDtEnd _)       = x
+fromEventProp x@(TDescription _) = x
+fromEventProp x@(TSummary _)     = x
+fromEventProp x@(TLocation _)    = x
+fromEventProp _                  = error "fromEventProp"
 
-parseDtEnd :: Parser Char EventProp
-parseDtEnd = DtEnd <$ token "DTEND:" <*> parseDateTime <* newLines
+findDtStamp :: [Token] -> DtStamp
+findDtStamp []              = error "DtStamp not found"
+findDtStamp (TDtStamp x:xs) = DtStamp x
+findDtStamp (_:xs)          = findDtStamp xs
 
-parseDescription :: Parser Char EventProp
-parseDescription = Description . concat <$ token "DESCRIPTION:" <*> parseValue
+findUid :: [Token] -> Uid
+findUid []          = error "Uid not found"
+findUid (TUid x:xs) = Uid x
+findUid (_:xs)      = findUid xs
 
-parseSummary :: Parser Char EventProp
-parseSummary = Summary . concat <$ token "SUMMARY:" <*> parseValue
+findDtStart :: [Token] -> DtStart
+findDtStart []              = error "DtStart not found"
+findDtStart (TDtStart x:xs) = DtStart x
+findDtStart (_:xs)          = findDtStart xs
 
-parseLocation :: Parser Char EventProp
-parseLocation = Location . concat <$ token "LOCATION:" <*> parseValue
+findDtEnd :: [Token] -> DtEnd
+findDtEnd []            = error "DtEnd not found"
+findDtEnd (TDtEnd x:xs) = DtEnd x
+findDtEnd (_:xs)        = findDtEnd xs
 
-parseEventProp :: Parser Char EventProp
-parseEventProp = parseDtStamp
-             <|> parseUid
-             <|> parseDtStart
-             <|> parseDtEnd
-             <|> parseDescription
-             <|> parseSummary
-             <|> parseLocation
+findDescription :: [Token] -> Description
+findDescription []                  = Description Nothing
+findDescription (TDescription x:xs) = Description (Just x)
+findDescription (_:xs)              = findDescription xs
 
-parseEvent :: Parser Char Event
-parseEvent =
-  Event
-    <$ token "BEGIN:VEVENT" <* newLines
-    <*> many parseEventProp
-    <* token "END:VEVENT" <* newLines
+findSummary :: [Token] -> Summary
+findSummary []              = Summary Nothing
+findSummary (TSummary x:xs) = Summary (Just x)
+findSummary (_:xs)          = findSummary xs
 
-tCalendar :: Parser Char Token
-tCalendar =
-  Token
-    <$> (Calendar
-          <$ token "BEGIN:VCALENDAR" <* newLines
-          <*> many parseCalendarProp
-          <*> many parseEvent
-          <* token "END:VCALENDAR" <* newLines)
+findLocation :: [Token] -> Location
+findLocation []               = Location Nothing
+findLocation (TLocation x:xs) = Location (Just x)
+findLocation (_:xs)           = findLocation xs
 
 scanCalendar :: Parser Char [Token]
-scanCalendar = many tCalendar
+scanCalendar = greedy anyToken
 
-fromCalendar :: Token -> Calendar
-fromCalendar (Token c) = c
+parseEvent :: Parser Token Event
+parseEvent =
+        (\eps ->
+          Event
+            (findDtStamp eps)
+            (findUid eps)
+            (findDtStart eps)
+            (findDtEnd eps)
+            (findDescription eps)
+            (findSummary eps)
+            (findLocation eps))
+        <$  beginEvent
+        <*> greedy eventProp
+        <*  endEvent
 
 parseCalendar :: Parser Token Calendar
-parseCalendar = fromCalendar <$> anySymbol
+parseCalendar =
+            (\a b ->
+              Calendar
+                (findVersion a)
+                (findProdId a)
+                b)
+            <$  beginCalendar
+            <*> many calendarProp
+            <*> many parseEvent
+            <*  endCalendar
 
 recognizeCalendar :: String -> Maybe Calendar
 recognizeCalendar s = run scanCalendar s >>= \g -> run parseCalendar g
@@ -154,33 +289,57 @@ recognizeCalendar s = run scanCalendar s >>= \g -> run parseCalendar g
 stringBreak :: String -> String
 stringBreak s
   | not $ null drop' = take 42 s ++ "\r\n" ++ stringBreak (' ' : drop')
-  | otherwise         = s
+  | otherwise         = s ++ "\r\n"
   where
     drop' = drop 42 s
 
 printLines :: [a] -> (a -> String) -> String
-printLines xs f = concatMap (\x -> stringBreak (f x) ++ "\r\n") xs
+printLines xs f = concatMap (stringBreak . f) xs
 
-printEvent' :: EventProp -> String
-printEvent' (Summary     s ) = "SUMMARY:" ++ s
-printEvent' (Uid         s ) = "UID:" ++ s
-printEvent' (DtStamp     dt) = "DTSTAMP:" ++ printDateTime dt
-printEvent' (DtStart     dt) = "DTSTART:" ++ printDateTime dt
-printEvent' (DtEnd       dt) = "DTEND:" ++ printDateTime dt
-printEvent' (Description s ) = "DESCRIPTION:" ++ s
-printEvent' (Location    s ) = "LOCATION:" ++ s
+printSummary :: Summary -> String
+printSummary (Summary (Just s)) = stringBreak("SUMMARY:" ++ s)
+printSummary _                  = error "Summary not found"
+
+printUid :: Uid -> String
+printUid (Uid s) = stringBreak("UID:" ++ s)
+
+printDtStamp :: DtStamp -> String
+printDtStamp (DtStamp dt) = stringBreak("DTSTAMP:" ++ printDateTime dt)
+
+printDtStart :: DtStart -> String
+printDtStart (DtStart dt) = stringBreak("DTSTART:" ++ printDateTime dt)
+
+printDtEnd :: DtEnd -> String
+printDtEnd (DtEnd dt) = stringBreak("DTEND:" ++ printDateTime dt)
+
+printDescription :: Description -> String
+printDescription (Description (Just s)) = stringBreak("DESCRIPTION:" ++ s)
+printDescription _                      = ""
+
+printLocation :: Location -> String
+printLocation (Location (Just s)) = stringBreak("LOCATION:" ++ s)
+printLocation _                   = ""
 
 printEvent :: Event -> String
 printEvent e = "BEGIN:VEVENT\r\n"
-            ++ printLines (eventProps e) printEvent'
+            ++ printDtStamp     (dtStamp e)
+            ++ printUid         (uid e)
+            ++ printDtStart     (dtStart e)
+            ++ printDtEnd       (dtEnd e)
+            ++ printSummary     (summary e)
+            ++ printDescription (description e)
+            ++ printLocation    (location e)
             ++ "END:VEVENT\r\n"
 
-printCalendar' :: CalendarProp -> String
-printCalendar' (ProdId  s) = "PRODID:" ++ s
-printCalendar' (Version s) = "VERSION:" ++ s
+printVersion :: Version -> String
+printVersion (Version s) = stringBreak("VERSION:" ++ s)
+
+printProdId :: ProdId -> String
+printProdId (ProdId s) = stringBreak("PRODID:" ++ s)
 
 printCalendar :: Calendar -> String
 printCalendar c = "BEGIN:VCALENDAR\r\n"
-               ++ printLines (calProp c) printCalendar'
+               ++ printVersion         (version c)
+               ++ printProdId          (prodId c)
                ++ concatMap printEvent (events c)
                ++ "END:VCALENDAR\r\n"
