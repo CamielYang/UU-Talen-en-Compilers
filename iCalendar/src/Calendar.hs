@@ -102,7 +102,7 @@ parseValue = (:) <$> identifier' <* newLines <*> parseValue'
   where
     parseValue' = greedy (symbol ' ' *> identifier' <* newLines)
 
--- Calendar
+-- Boundary
 tBeginCalendar :: Parser Char Token
 tBeginCalendar = TBeginCalendar <$ token "BEGIN:VCALENDAR" <* newLines
 
@@ -115,12 +115,14 @@ tBeginEvent = TBeginEvent <$ token "BEGIN:VEVENT" <* newLines
 tEndEvent :: Parser Char Token
 tEndEvent = TEndEvent <$ token "END:VEVENT" <* newLines
 
+-- Calendar
 tVersion :: Parser Char Token
 tVersion = TVersion . concat <$ token "VERSION:" <*> parseValue
 
 tProdId :: Parser Char Token
 tProdId = TProdId . concat <$ token "PRODID:" <*> parseValue
 
+-- Event
 tDtStamp :: Parser Char Token
 tDtStamp = TDtStamp <$ token "DTSTAMP:" <*> parseDateTime <* newLines
 
@@ -157,6 +159,7 @@ anyToken = tBeginCalendar
        <|> tSummary
        <|> tLocation
 
+-- Boundary
 beginCalendar :: Parser Token ()
 beginCalendar = () <$ satisfy (== TBeginCalendar)
 
@@ -289,7 +292,7 @@ recognizeCalendar s = run scanCalendar s >>= \g -> run parseCalendar g
 stringBreak :: String -> String
 stringBreak s
   | not $ null drop' = take 42 s ++ "\r\n" ++ stringBreak (' ' : drop')
-  | otherwise         = s ++ "\r\n"
+  | otherwise        = s ++ "\r\n"
   where
     drop' = drop 42 s
 
