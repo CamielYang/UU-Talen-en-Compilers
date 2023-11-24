@@ -12,7 +12,7 @@ $alpha = [a-zA-Z]       -- alphabetic characters
 tokens :-
   "--".*                 ;
   $white+                ;
-
+  -- Commands
   "->"                   { \s -> TArrow }
   "."                    { \s -> TDot }
   ","                    { \s -> TComma }
@@ -24,19 +24,19 @@ tokens :-
   "case"                 { \s -> TCase }
   "of"                   { \s -> TOf }
   "end"                  { \s -> TEnd }
-
+  -- Directions
   "left"                 { \s -> TLeft }
   "right"                { \s -> TRight }
   "front"                { \s -> TFront }
   ";"                    { \s -> TSemiColon }
-
+  --  Pattern
   "Empty"                { \s -> TEmpty }
   "Lambda"               { \s -> TLambda }
   "Debris"               { \s -> TDebris }
   "Asteroid"             { \s -> TAsteroid }
   "Boundary"             { \s -> TBoundary }
   "_"           { \s -> TUnderScore }
-
+  --  Ident
   [$alpha $digit \+ \-]+ { \s -> TIdent s }
 
 

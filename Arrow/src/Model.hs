@@ -33,19 +33,24 @@ data Token = Token
 
 
 -- Exercise 2
-newtype Ident = Ident String deriving Show
-data Dir      = Left | Right | Front deriving Show
-data Pattern  = Empty | Lambda | Debris | Asteroid | Boundary deriving Show
-data Alt      = UnderScore | Alt Pattern Commands deriving Show
-data Command  = Go
-              | Take
-              | Mark
-              | Nothing
-              | Turn Dir
-              | Case Dir Alts Commands deriving Show
+data Pattern  = PEmpty | PLambda | PDebris | PAsteroid | PBoundary | PUnderScore deriving Show
 
-newtype Alts     = Alts [Alt] deriving Show
-newtype Commands = Commands [Command] deriving Show
-data Rule        = Rule Ident Commands deriving Show
+data Dir      = DLeft | DRight | DFront deriving Show
+
+data Cmd     = CMDGo
+                 | CMDTake
+                 | CMDMark
+                 | CMDNothing
+                 | CMDTurn Dir
+                 | CMDCase Dir Alts
+                 | CMDIdent String deriving Show
+
+newtype Cmds = Cmds [Cmd] deriving Show
+
+data Alt      = Alt Pattern Cmds deriving Show
+newtype Alts  = Alts [Alt] deriving Show
+
+newtype Id = Ident String deriving Show
+data Rule     = Rule String Cmds deriving Show
 
 newtype Program  = Program [Rule] deriving Show

@@ -1,18 +1,18 @@
 module Interpreter where
 
-import ParseLib.Abstract
-import Prelude hiding ((<*), (<$))
+import           ParseLib.Abstract
+import           Prelude           hiding ((<$), (<*))
 
-import Data.Map (Map)
-import qualified Data.Map as L
+import           Data.Map          (Map)
+import qualified Data.Map          as L
 
-import Data.Char (isSpace)
-import Control.Monad (replicateM)
+import           Control.Monad     (replicateM)
+import           Data.Char         (isSpace)
 
-import Lexer
-import Parser
-import Model
-import Algebra
+import           Algebra
+import           Lexer
+import           Model
+import           Parser
 
 
 data Contents  =  Empty | Lambda | Debris | Asteroid | Boundary
