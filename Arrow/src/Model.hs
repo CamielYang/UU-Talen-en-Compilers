@@ -4,22 +4,23 @@ import           Data.Sequence (Seq (Empty))
 -- Exercise 1
 data Token = Token
            -- Commands
-           | TArrow
-           | TDot
-           | TComma
            | TGo
            | TTake
            | TMark
            | TNothing
            | TTurn
+           | TIdent String
+
+           -- Case Keywords
            | TCase
            | TOf
            | TEnd
+
            -- Directions
            | TLeft
            | TRight
            | TFront
-           | TSemiColon
+
            --  Pattern
            | TEmpty
            | TLambda
@@ -27,8 +28,12 @@ data Token = Token
            | TAsteroid
            | TBoundary
            | TUnderScore
-           --  Ident
-           | TIdent String
+
+           -- Symbols
+           | TSemiColon
+           | TArrow
+           | TDot
+           | TComma
   deriving Show
 
 

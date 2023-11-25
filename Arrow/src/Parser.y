@@ -9,25 +9,29 @@ import qualified Lexer as L
 %tokentype { Token }
 
 %token
-  Empty  	{TEmpty}
-  Lambda 	{TLambda}
-  Debris 	{TDebris}
-  Asteroid 	{TAsteroid}
-  Boundary 	{TBoundary}
   left 		{TLeft}
   right 	{TRight}
   front 	{TFront}
-  ident 	{TIdent $$}
+
   go 		{TGo}
   take 	        {TTake}
   mark 	        {TMark}
   nothing       {TNothing}
   turn 	        {TTurn}
+  ident 	{TIdent $$}
+
   case 	        {TCase}
   of		{TOf}
   end 	        {TEnd}
-  '->' 		{TArrow}
+
+  Empty  	{TEmpty}
+  Lambda 	{TLambda}
+  Debris 	{TDebris}
+  Asteroid 	{TAsteroid}
+  Boundary 	{TBoundary}
   '_' 		{TUnderScore}
+
+  '->' 		{TArrow}
   ',' 		{TComma}
   '.' 		{TDot}
   ';' 		{TSemiColon}
