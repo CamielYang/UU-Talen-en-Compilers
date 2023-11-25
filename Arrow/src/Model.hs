@@ -38,19 +38,18 @@ data Pattern  = PEmpty | PLambda | PDebris | PAsteroid | PBoundary | PUnderScore
 data Dir      = DLeft | DRight | DFront deriving Show
 
 data Cmd     = CMDGo
-                 | CMDTake
-                 | CMDMark
-                 | CMDNothing
-                 | CMDTurn Dir
-                 | CMDCase Dir Alts
-                 | CMDIdent String deriving Show
+             | CMDTake
+             | CMDMark
+             | CMDNothing
+             | CMDTurn Dir
+             | CMDCase Dir Alts
+             | CMDIdent String deriving Show
 
 newtype Cmds = Cmds [Cmd] deriving Show
 
 data Alt      = Alt Pattern Cmds deriving Show
 newtype Alts  = Alts [Alt] deriving Show
 
-newtype Id = Ident String deriving Show
 data Rule     = Rule String Cmds deriving Show
 
 newtype Program  = Program [Rule] deriving Show
