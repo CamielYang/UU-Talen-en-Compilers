@@ -39,13 +39,13 @@ import qualified Lexer as L
 Program : Rules                      { Program $1 }
 
 Rules   : Rule                       { [$1] }
-        | Rules Rule                 { $2 : $1 }
+        | Rule Rules                 { $1 : $2 }
 Rule    : ident '->' Cmds '.'        { Rule $1 $3 }
 
 Cmds    : Cmds1                      { Cmds $1 }
 Cmds1   : {- empty -}                { [] }
         | Cmd                        { [$1] }
-        | Cmds1 ',' Cmd              { $3 : $1 }
+        | Cmd ',' Cmds1              { $1 : $3 }
 Cmd     : go                         { CMDGo }
         | take                       { CMDTake }
         | mark                       { CMDMark }
@@ -62,7 +62,7 @@ Dir     : left                       { DLeft }
 Alts    : Alts1                      { Alts $1 }
 Alts1   : {- empty -}                { [] }
         | Alt                        { [$1] }
-        | Alts1 ';' Alt              { $3 : $1 }
+        | Alt ';' Alts1              { $1 : $3 }
 Alt     : Pattern '->' Cmds          { Alt $1 $3 }
 
 Pattern : Empty                      { PEmpty }
