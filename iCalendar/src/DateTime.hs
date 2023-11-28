@@ -114,6 +114,11 @@ getDays y (Month m)
   | m `elem` [4, 6, 9, 11] = 30
   | otherwise = 0
 
+getDaysInYear :: Year -> Int
+getDaysInYear y
+  | isLeapYear y = 366
+  | otherwise    = 365
+
 checkValidDay :: Year -> Month -> Day -> Bool
 checkValidDay y m@(Month m') (Day d) = d <= getDays y m
 

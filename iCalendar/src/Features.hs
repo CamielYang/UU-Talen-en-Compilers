@@ -36,8 +36,26 @@ eventDuration e = DateTime
     (DtStart (DateTime ds ts utc)) = dtStart e
     (DtEnd   (DateTime de te _  )) = dtEnd e
 
-dateTimeToMinutes :: DateTime -> Int
-dateTimeToMinutes (DateTime
+yearToMinutes :: Year -> Year -> Int
+yearToMinutes _ (Year 0) = 0
+yearToMinutes (Year sy) (Year y) = getDaysInYear (Year sy) * 24 * 60 + yearToMinutes (Year nextYear) (Year $ y - 1)
+  where
+    nextYear = sy + 1
+
+monthToMinutes :: Year -> Month -> Month -> Int
+monthToMinutes _ _ (Month 0) = 0
+monthToMinutes (Year sy) (Month sm) (Month m) =
+  getDays (Year sy) (Month sm) * 24 * 60 + monthToMinutes (Year nextYear) (Month nextMonth) (Month m)
+  where
+    nextMonth
+      | sm == 12  = 1
+      | otherwise = sm + 1
+    nextYear
+      | sm == 12  = sy + 1
+      | otherwise = sy
+
+dateTimeToMinutes :: Year -> Month -> DateTime -> Int
+dateTimeToMinutes startYear startMonth (DateTime
   (Date
     (Year y)
     (Month m)
@@ -46,7 +64,7 @@ dateTimeToMinutes (DateTime
     (Hour h)
     (Minute mi)
     _) _) =
-  (y * 365 * 24 * 60) + (m * 30 * 24 * 60) + (d * 24 * 60) + (h * 60) + mi
+  yearToMinutes startYear (Year y)  + monthToMinutes startYear startMonth (Month m) + (d * 24 * 60) + (h * 60) + mi
 
 countEvents :: Calendar -> Int
 countEvents (Calendar { events = es }) = length es
@@ -67,8 +85,12 @@ checkOverlapping (Calendar { events = es }) = hasOverlappingEvents' es
 
 timeSpent :: String -> Calendar -> Int
 timeSpent summary' (Calendar { events = es }) =
-  sum $ map (dateTimeToMinutes . eventDuration) (filter f es)
+  sum $ map (\e -> dateTimeToMinutes
+                      (year $ dateStart e)
+                      (month $ dateStart e)
+                      $ eventDuration e) (filter f es)
   where
+    dateStart = date . runDtStart . dtStart
     f e = case runSummary (summary e) of
       Nothing        -> False
       Just summary'' -> summary'' == summary'
@@ -178,7 +200,7 @@ ppMonth y m c = render (renderTable y m (reshape 7 $ fillStartDays ++ [createCDa
       | d <= days = (CDay $ Day d, filterEventsDay events (Day d))
       | otherwise = emptyDay
 
--- Test functions
+-- Test functions for myself
 bastillePath = "examples/bastille.ics"
 multiLinePath = "examples/multiline.ics"
 newYearPath = "examples/newyear.ics"
