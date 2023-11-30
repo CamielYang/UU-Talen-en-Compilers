@@ -126,22 +126,34 @@ maximum' :: (a -> Int) -> [a] -> Int
 maximum' _ [] = 0
 maximum' f xs = (maximum . map f) xs
 
-ppEvent :: Event -> String
-ppEvent e = ts ++ "-" ++ te
+uniqueDayId :: Event -> String
+uniqueDayId e = " #" ++ show ((day' + 23) * hour' `mod` 1000)
   where
-    ts = humanReadableTime $ runDtStart $ dtStart e
-    te = humanReadableTime $ runDtEnd   $ dtEnd e
+    dts = runDtStart $ dtStart e
+    day' = runDay $ day $ date dts
+    hour' = runHour $ hour $ time dts
+
+ppEvent :: Day -> Event -> String
+ppEvent d e = ts ++ "-" ++ te ++ uniqueDayId e
+  where
+    ts
+      | d == day (date $ runDtStart $ dtStart e) = humanReadableTime $ runDtStart $ dtStart e
+      | otherwise = ""
+    te
+      | d == day (date $ runDtEnd $ dtEnd e) = humanReadableTime $ runDtEnd $ dtEnd e
+      | otherwise = ""
+
 
 emptyLine :: Box
 emptyLine = emptyBox 1 1
 
 renderDay :: CalendarDayBlock -> Box
 renderDay (EmptyDay, _) = emptyBox 1 totalSize
-renderDay (CDay (Day d), es) = padding <> vcat left (day : emptyLine : events) <> padding
+renderDay (CDay (Day d), es) = padding <> vcat left (day : emptyLine : event) <> padding
   where
     padding = text $ replicate paddingSize ' '
     day = alignHoriz left contentSize $ text $ show d
-    events = map (alignHoriz left contentSize . text . ppEvent) es
+    event = map (alignHoriz left contentSize . text . ppEvent (Day d)) es
 
 renderWeek :: [CalendarDayBlock] -> Box
 renderWeek ss = sep <> punctuateH left sep daysBoxes <> sep
@@ -184,9 +196,10 @@ getCalendarMonthEvents (Calendar { events = es }) y m = filter f es
 filterEventsDay :: [Event] -> Day -> [Event]
 filterEventsDay es d = filter f es
   where
-    f e = d == d'
+    f e = d == d' || d == d''
       where
-        (DateTime (Date _ _ d') _ _) = runDtStart $ dtStart e
+        (DateTime (Date _ _ d') _ _)  = runDtStart $ dtStart e
+        (DateTime (Date _ _ d'') _ _) = runDtEnd   $ dtEnd e
 
 ppMonth :: Year -> Month -> Calendar -> String
 ppMonth y m c = render (renderTable y m (reshape 7 $ fillStartDays ++ [createCDay d | d <- [1..(35-skipDays)]]))

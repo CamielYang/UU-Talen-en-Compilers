@@ -307,13 +307,13 @@ printUid :: Uid -> String
 printUid (Uid s) = stringBreak("UID:" ++ s)
 
 printDtStamp :: DtStamp -> String
-printDtStamp (DtStamp dt) = stringBreak("DTSTAMP:" ++ printDateTime dt)
+printDtStamp (DtStamp dt) = "DTSTAMP:" ++ printDateTime dt
 
 printDtStart :: DtStart -> String
-printDtStart (DtStart dt) = stringBreak("DTSTART:" ++ printDateTime dt)
+printDtStart (DtStart dt) = "DTSTART:" ++ printDateTime dt
 
 printDtEnd :: DtEnd -> String
-printDtEnd (DtEnd dt) = stringBreak("DTEND:" ++ printDateTime dt)
+printDtEnd (DtEnd dt) = "DTEND:" ++ printDateTime dt
 
 printDescription :: Description -> String
 printDescription (Description (Just s)) = stringBreak("DESCRIPTION:" ++ s)
