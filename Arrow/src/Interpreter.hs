@@ -10,12 +10,13 @@ import           Control.Monad     (replicateM)
 import           Data.Char         (isSpace)
 
 import           Algebra
+import           Data.Maybe        (fromJust)
 import           Lexer
 import           Model
 import           Parser
 
 
-data Contents  =  Empty | Lambda | Debris | Asteroid | Boundary
+data Contents  =  Empty | Lambda | Debris | Asteroid | Boundary deriving (Eq, Show)
 
 type Size      =  Int
 type Pos       =  (Int, Int)
@@ -42,7 +43,6 @@ parseSpace = do
     contents = choice (Prelude.map (\(f,c) -> f <$ symbol c) contentsTable)
       <* spaces
 
-
 -- | Conversion table
 contentsTable :: [ (Contents, Char)]
 contentsTable =  [ (Empty   , '.' )
@@ -51,15 +51,28 @@ contentsTable =  [ (Empty   , '.' )
                  , (Asteroid, 'O' )
                  , (Boundary, '#' )]
 
-
 -- Exercise 7
 printSpace :: Space -> String
-printSpace = undefined
+printSpace spaceMap =
+    show k ++ "\n"
+ ++ space
+  where
+    (k@(rws, clms),_) = L.findMax spaceMap
+    space = L.foldrWithKey f [] spaceMap
+    f (_, clms') content b
+      | clms' == clms = cChar : '\n' : b
+      | otherwise     = cChar : b
+      where
+        cChar = fromJust $ lookup content contentsTable
 
+testPrintSampleSpace = do
+  s <- readFile "examples/SampleSpace.space"
+  let [(result, _)] = parse parseSpace s
+  putStrLn $ printSpace result
 
 -- These three should be defined by you
-type Ident = ()
-type Commands = ()
+type Ident = IdentT
+type Commands = Cmds
 type Heading = ()
 
 type Environment = Map Ident Commands
@@ -73,7 +86,18 @@ data Step =  Done  Space Pos Heading
 
 -- | Exercise 8
 toEnvironment :: String -> Environment
-toEnvironment = undefined
+toEnvironment chars
+  | checkProgram pgrm = L.fromList $ map (\(Rule i c) -> (i, c)) rs
+  | otherwise         = error "Program is not valid"
+  where
+    tokens :: [Token]
+    tokens = alexScanTokens chars
+    pgrm :: Program
+    pgrm@(Program rs) = parser tokens
+
+testEnvironment = do
+  s <- readFile "examples/Add.arrow"
+  return $ toEnvironment s
 
 -- | Exercise 9
 step :: Environment -> ArrowState -> Step
