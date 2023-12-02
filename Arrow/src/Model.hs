@@ -38,23 +38,32 @@ data Token = Token
 
 
 -- Exercise 2
-data Pattern  = PEmpty | PLambda | PDebris | PAsteroid | PBoundary | PUnderScore deriving Show
+newtype Ident    = Ident String       deriving Show
 
-data Dir      = DLeft | DRight | DFront deriving Show
+data Pattern     = PEmpty
+                 | PLambda
+                 | PDebris
+                 | PAsteroid
+                 | PBoundary
+                 | PUnderScore        deriving (Show, Eq)
 
-data Cmd     = CMDGo
-             | CMDTake
-             | CMDMark
-             | CMDNothing
-             | CMDTurn Dir
-             | CMDCase Dir Alts
-             | CMDIdent String deriving Show
+data Dir         = DLeft
+                 | DRight
+                 | DFront             deriving Show
 
-newtype Cmds = Cmds [Cmd] deriving Show
+data Cmd         = CMDGo
+                 | CMDTake
+                 | CMDMark
+                 | CMDNothing
+                 | CMDTurn  Dir
+                 | CMDCase  Dir Alts
+                 | CMDIdent Ident    deriving Show
 
-data Alt      = Alt Pattern Cmds deriving Show
-newtype Alts  = Alts [Alt] deriving Show
+newtype Cmds     = Cmds [Cmd]        deriving Show
 
-data Rule     = Rule String Cmds deriving Show
+data Alt         = Alt Pattern Cmds  deriving Show
+newtype Alts     = Alts [Alt]        deriving Show
 
-newtype Program  = Program [Rule] deriving Show
+data Rule        = Rule Ident Cmds   deriving Show
+
+newtype Program  = Program [Rule]    deriving Show
