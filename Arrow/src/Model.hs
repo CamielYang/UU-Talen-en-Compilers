@@ -38,7 +38,7 @@ data Token = Token
 
 
 -- Exercise 2
-newtype Ident    = Ident String       deriving Show
+-- newtype Ident    = Ident String       deriving Show
 
 data Pattern     = PEmpty
                  | PLambda
@@ -57,13 +57,13 @@ data Cmd         = CMDGo
                  | CMDNothing
                  | CMDTurn  Dir
                  | CMDCase  Dir Alts
-                 | CMDIdent Ident    deriving Show
+                 | CMDIdent String   deriving Show
 
 newtype Cmds     = Cmds [Cmd]        deriving Show
 
 data Alt         = Alt Pattern Cmds  deriving Show
 newtype Alts     = Alts [Alt]        deriving Show
 
-data Rule        = Rule Ident Cmds   deriving Show
+data Rule        = Rule String Cmds   deriving Show
 
 newtype Program  = Program [Rule]    deriving Show

@@ -7,12 +7,12 @@ import           Model
 
 -- Exercise 5
 type CmdAlgebra r = (r,                -- CMDGo
-                  r,                -- CMDTake
-                  r,                -- CMDMark
-                  r,                -- CMDNothing
-                  Dir -> r,         -- CMDTurn Dir
-                  Dir -> Alts -> r, -- CMDCase Dir Alts
-                  Ident -> r)      -- CMDIdent String
+                     r,                -- CMDTake
+                     r,                -- CMDMark
+                     r,                -- CMDNothing
+                     Dir -> r,         -- CMDTurn Dir
+                     Dir -> Alts -> r, -- CMDCase Dir Alts
+                     String -> r)      -- CMDIdent String
 foldCmd :: CmdAlgebra r -> Cmd -> r
 foldCmd (go,
          take,
@@ -46,7 +46,7 @@ noUndefined :: Program -> Bool
 noUndefined = foldProgram noUndefinedAlg
 
 hasStartAlg :: ProgramAlgebra Bool
-hasStartAlg = any (\(Rule (Ident id) _) -> id == "start")
+hasStartAlg = any (\(Rule id _) -> id == "start")
 
 hasStart :: Program -> Bool
 hasStart = foldProgram hasStartAlg
@@ -55,8 +55,8 @@ noDuplicatesAlg :: ProgramAlgebra Bool
 noDuplicatesAlg = f []
   where
     f :: [String] -> [Rule] -> Bool
-    f _ []                            = True
-    f ids (Rule (Ident id) _ : rules) = id `notElem` ids && f (id : ids) rules
+    f _ []                    = True
+    f ids (Rule id _ : rules) = id `notElem` ids && f (id : ids) rules
 
 noDuplicates :: Program -> Bool
 noDuplicates = foldProgram noDuplicatesAlg
@@ -67,12 +67,19 @@ validCmdCaseAlg = (True, True, True, True, isTrue, case', isTrue)
     isTrue _ = True
 
     case' :: Dir -> Alts -> Bool
-    case' _ (Alts alts) = hasUnderScore || True
+    case' _ (Alts alts) = hasUnderScore || hasAllPatterns
       where
-        hasUnderScore = case find h alts of
+        hasUnderScore = case find f alts of
                           Nothing -> False
                           Just _  -> True
-        h (Alt PUnderScore _) = True
+          where
+            f (Alt PUnderScore _) = True
+            f _                   = False
+        hasAllPatterns = length ps == 5
+          where
+            ps = nub $ foldr f [] alts
+            f (Alt PUnderScore _) b = b
+            f (Alt p _) b           = p : b
 
 validCmdCase :: Cmd -> Bool
 validCmdCase = foldCmd validCmdCaseAlg
@@ -89,6 +96,9 @@ validCmdCaseProgAlg = f
 
 validCmdCaseProg :: Program -> Bool
 validCmdCaseProg = foldProgram validCmdCaseProgAlg
+
+testProgram :: Program
+testProgram = Program [Rule "start" (Cmds [CMDTurn DRight,CMDGo,CMDTurn DLeft,CMDIdent "firstArg"]),Rule "turnAround" (Cmds [CMDTurn DRight,CMDTurn DRight]),Rule "return" (Cmds [CMDCase DFront (Alts [Alt PBoundary (Cmds [CMDNothing]),Alt PUnderScore (Cmds [CMDGo,CMDIdent "return"])])]),Rule "firstArg" (Cmds [CMDCase DLeft (Alts [Alt PLambda (Cmds [CMDGo,CMDIdent "firstArg",CMDMark,CMDGo]),Alt PUnderScore (Cmds [CMDIdent "turnAround",CMDIdent "return",CMDTurn DLeft,CMDGo,CMDGo,CMDTurn DLeft,CMDIdent "secondArg"])])]),Rule "secondArg" (Cmds [CMDCase DLeft (Alts [Alt PLambda (Cmds [CMDGo,CMDIdent "secondArg",CMDMark,CMDGo]),Alt PUnderScore (Cmds [CMDIdent "turnAround",CMDIdent "return",CMDTurn DLeft,CMDGo,CMDTurn DLeft])])])]
 
 checkProgram :: Program -> Bool
 checkProgram p = noUndefined      p
