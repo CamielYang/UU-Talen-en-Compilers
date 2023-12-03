@@ -18,11 +18,11 @@ import           Model
 import           Parser
 
 
-data Contents  =  Empty | Lambda | Debris | Asteroid | Boundary deriving (Eq, Show)
+data Contents  = Empty | Lambda | Debris | Asteroid | Boundary deriving (Eq, Show)
 
-type Size      =  Int
-type Pos       =  (Int, Int)
-type Space     =  Map Pos Contents
+type Size      = Int
+type Pos       = (Int, Int)
+type Space     = Map Pos Contents
 
 -- | Parses a space file, such as the ones in the examples folder.
 parseSpace :: Parser Char Space
@@ -84,18 +84,18 @@ cycleNext x
   | x == maxBound = minBound
   | otherwise     = succ x
 
-type Ident = IdentT
-type Commands = Cmds
-type Heading = Compass
+type Ident       = IdentT
+type Commands    = Cmds
+type Heading     = Compass
 
 type Environment = Map Ident Commands
 
-type Stack       =  Commands
-data ArrowState  =  ArrowState Space Pos Heading Stack
+type Stack       = Commands
+data ArrowState  = ArrowState Space Pos Heading Stack
 
-data Step =  Done  Space Pos Heading
-          |  Ok    ArrowState
-          |  Fail  String
+data Step        = Done Space Pos Heading
+                 | Ok   ArrowState
+                 | Fail String
 
 -- | Exercise 8
 toEnvironment :: String -> Environment
@@ -113,6 +113,20 @@ testEnvironment = do
   return $ toEnvironment s
 
 -- | Exercise 9
+pop :: Stack -> Stack
+pop (Cmds [])     = Cmds []
+pop (Cmds (_:xs)) = Cmds xs
+
+prepend :: Cmds -> Stack -> Stack
+prepend (Cmds cs) (Cmds cs') = Cmds (cs ++ cs')
+
+contentToPattern :: Contents -> Pattern
+contentToPattern Empty    = PEmpty
+contentToPattern Lambda   = PLambda
+contentToPattern Debris   = PDebris
+contentToPattern Asteroid = PAsteroid
+contentToPattern Boundary = PBoundary
+
 updatePos :: Pos -> Heading -> Pos
 updatePos (y, x) North = (y - 1, x    )
 updatePos (y, x) East  = (y    , x + 1)
@@ -135,36 +149,56 @@ makeTurn h dir
   | dir == DRight = cycleNext h
   | otherwise     = h
 
-doCase :: Dir -> Alts -> ArrowState -> ArrowState
-doCase dir (Alts alts) (ArrowState sp p h (Cmds cds)) =
-  case find (\(Alt p _) -> p == pattern') alts of
-    Nothing               -> let (Alt _ (Cmds c)) = fromJust $ find (\(Alt p _) -> p == PUnderScore) alts in ArrowState sp p h (Cmds $ c ++ cds)
-    Just (Alt _ (Cmds c)) -> ArrowState sp p h (Cmds $ c ++ cds)
+sensoryRead :: ArrowState -> Dir -> Pattern
+sensoryRead (ArrowState sp p h st) dir = contentToPattern $ fromMaybe Boundary $ L.lookup readPos sp
   where
-    readPos = case dir of
-      DFront -> updatePos p h
-      DLeft  -> updatePos p (cyclePrev h)
-      DRight -> updatePos p (cycleNext h)
-    pattern' = case fromMaybe Boundary $ L.lookup readPos sp of
-      Empty    -> PEmpty
-      Lambda   -> PLambda
-      Debris   -> PDebris
-      Asteroid -> PAsteroid
-      Boundary -> PBoundary
+    readPos =
+      case dir of
+        DFront -> updatePos p h
+        DLeft  -> updatePos p (cyclePrev h)
+        DRight -> updatePos p (cycleNext h)
+
+goCommand :: ArrowState -> Step
+goCommand (ArrowState sp p h st)       = Ok $ ArrowState sp (updatePos p h) h (pop st)
+
+takeCommand :: ArrowState -> Step
+takeCommand (ArrowState sp p h st)     = Ok $ ArrowState (takePattern sp p) p h (pop st)
+
+markCommand :: ArrowState -> Step
+markCommand (ArrowState sp p h st)     = Ok $ ArrowState (markPattern sp p) p h (pop st)
+
+nothingCommand :: ArrowState -> Step
+nothingCommand (ArrowState sp p h st)  = Ok $ ArrowState sp p h (pop st)
+
+turnCommand :: ArrowState -> Dir -> Step
+turnCommand (ArrowState sp p h st) dir = Ok $ ArrowState sp p (makeTurn h dir) (pop st)
+
+caseCommand :: ArrowState -> Dir -> Alts -> Step
+caseCommand (ArrowState sp p h st) dir (Alts alts) = Ok $
+  case find (\(Alt p _) -> p == scannedPattern) alts of
+    Nothing ->
+      let (Alt _ caseCmds) = fromJust $ find (\(Alt p _) -> p == PUnderScore) alts in
+      ArrowState sp p h (prepend caseCmds (pop st))
+    Just (Alt _ caseCmds) -> ArrowState sp p h (prepend caseCmds (pop st))
+  where
+    scannedPattern = sensoryRead (ArrowState sp p h st) dir
+
+identCommand :: ArrowState -> Environment -> Ident -> Step
+identCommand (ArrowState sp p h st) env ident =
+  case L.lookup ident env of
+    Nothing     -> Fail "Identifier not found"
+    Just idCmds -> Ok $ ArrowState sp p h (prepend idCmds (pop st))
 
 step :: Environment -> ArrowState -> Step
 step env as@(ArrowState sp p h (Cmds [])) = Done sp p h
 step env as@(ArrowState sp p h st@(Cmds (cd : cds))) =
   case cd of
-    CMDGo            -> Ok $ ArrowState sp (updatePos p h) h (Cmds cds)
-    CMDTake          -> Ok $ ArrowState (takePattern sp p) p h (Cmds cds)
-    CMDMark          -> Ok $ ArrowState (markPattern sp p) p h (Cmds cds)
-    CMDNothing       -> Ok $ ArrowState sp p h (Cmds cds)
-    CMDTurn dir      -> Ok $ ArrowState sp p (makeTurn h dir) (Cmds cds)
-    CMDCase dir alts -> Ok $ doCase dir alts (ArrowState sp p h (Cmds cds))
-    CMDIdent ident   ->
-      case L.lookup ident env of
-        Nothing          -> Fail "Identifier not found"
-        Just (Cmds cds') -> Ok $ ArrowState sp p h (Cmds $ cds' ++ cds)
+    CMDGo            -> goCommand      as
+    CMDTake          -> takeCommand    as
+    CMDMark          -> markCommand    as
+    CMDNothing       -> nothingCommand as
+    CMDTurn dir      -> turnCommand    as dir
+    CMDCase dir alts -> caseCommand    as dir alts
+    CMDIdent ident   -> identCommand   as env ident
 
 

@@ -16,12 +16,15 @@ interactive env state = do
   getLine
   case step env state of
     Done space _ _ -> do
-      putStrLn $ printSpace space
-    Ok state'@(ArrowState space _ _ _) -> do
-      putStrLn $ printSpace space
+      putStrLn $ "Space result:" ++ "\n"
+              ++ printSpace space
+    Ok state'@(ArrowState space pos heading stack) -> do
+      putStrLn $ "Position: " ++ show pos ++ "\n"
+              ++ "Heading: " ++ show heading ++ "\n"
+              ++ "Stack: " ++ show stack ++ "\n"
+              ++ printSpace space
       interactive env state'
     Fail err -> putStrLn err
-
 
 batch :: Environment -> ArrowState -> (Space, Pos, Heading)
 batch env state = case step env state of
@@ -80,9 +83,13 @@ main = do
 
 askForInput :: Environment -> ArrowState -> IO ()
 askForInput env state = do
-  putStrLn $ "1 - Interactive mode" ++ "\n"
-          ++ "2 - Batch mode" ++ "\n"
-          ++ "3 - Exit" ++ "\n"
+  putStrLn $ "ArrowFile      = " ++ arrowFile           ++ "\n"
+          ++ "SpaceFile      = " ++ spaceFile           ++ "\n"
+          ++ "InitialPos     = " ++ show initialPos     ++ "\n"
+          ++ "InitialHeading = " ++ show initialHeading ++ "\n\n"
+          ++ "1 - Interactive mode"                     ++ "\n"
+          ++ "2 - Batch mode"                           ++ "\n"
+          ++ "3 - Exit"                                 ++ "\n"
   choice <- getLine
   case choice of
     "1" -> interactive env state
