@@ -10,7 +10,7 @@ import           Control.Monad     (replicateM)
 import           Data.Char         (isSpace)
 
 import           Algebra
-import           Data.Maybe        (fromJust)
+import           Data.Maybe        (Maybe, fromJust)
 import           Lexer
 import           Model
 import           Parser
@@ -71,9 +71,22 @@ testPrintSampleSpace = do
   putStrLn $ printSpace result
 
 -- These three should be defined by you
+data Compass = North | East | South | West deriving (Show, Eq, Enum, Ord, Bounded)
+test = [West .. West]
+
+cyclePrev :: (Eq a, Enum a, Bounded a) => a -> a
+cyclePrev x
+  | x == minBound = maxBound
+  | otherwise     = pred x
+
+cycleNext :: (Eq a, Enum a, Bounded a) => a -> a
+cycleNext x
+  | x == maxBound = minBound
+  | otherwise     = succ x
+
 type Ident = IdentT
 type Commands = Cmds
-type Heading = ()
+type Heading = Compass
 
 type Environment = Map Ident Commands
 
@@ -100,7 +113,40 @@ testEnvironment = do
   return $ toEnvironment s
 
 -- | Exercise 9
+updatePos :: Pos -> Heading -> Pos
+updatePos (x, y) North = (x    , y + 1)
+updatePos (x, y) East  = (x + 1, y    )
+updatePos (x, y) South = (x    , y - 1)
+updatePos (x, y) West  = (x - 1, y    )
+
+takePattern :: Space -> Pos -> Space
+takePattern spaceMap pos
+  | pattern' `elem` [Lambda, Debris] = L.insert pos Empty spaceMap
+  | otherwise                          = spaceMap
+  where
+    pattern' = fromJust $ L.lookup pos spaceMap
+
+markPattern :: Space -> Pos -> Space
+markPattern spaceMap pos = L.insert pos Lambda spaceMap
+
+makeTurn :: Heading -> Dir -> Heading
+makeTurn h dir
+  | dir == DLeft  = cyclePrev h
+  | dir == DRight = cycleNext h
+  | otherwise     = h
+
 step :: Environment -> ArrowState -> Step
-step = undefined
+step env as@(ArrowState sp p h (Cmds [])) = Done sp p h
+step env as@(ArrowState sp p h st@(Cmds (cd : cds))) =
+  case cd of
+    CMDGo              -> Ok $ ArrowState sp (updatePos p h) h st
+    CMDTake            -> Ok $ ArrowState (takePattern sp p) p h st
+    CMDMark            -> Ok $ ArrowState (markPattern sp p) p h st
+    CMDNothing         -> Ok as
+    (CMDTurn dir)      -> Ok $ ArrowState sp p (makeTurn h dir) st
+    (CMDCase dir alts) -> Ok as
+    (CMDIdent ident)   -> case L.lookup ident env of
+      Nothing   -> Fail "Identifier not found"
+      Just cmds -> Ok $ ArrowState sp p h (Cmds $ cmds ++ cds)
 
 

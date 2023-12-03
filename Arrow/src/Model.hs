@@ -49,7 +49,7 @@ data Pattern     = PEmpty
 
 data Dir         = DLeft
                  | DRight
-                 | DFront            deriving Show
+                 | DFront            deriving (Show, Eq)
 
 data Cmd         = CMDGo
                  | CMDTake
