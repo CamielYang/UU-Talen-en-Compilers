@@ -10,7 +10,8 @@ import           Control.Monad     (replicateM)
 import           Data.Char         (isSpace)
 
 import           Algebra
-import           Data.Maybe        (Maybe, fromJust)
+import           Data.Foldable     (find)
+import           Data.Maybe        (Maybe, fromJust, fromMaybe)
 import           Lexer
 import           Model
 import           Parser
@@ -21,8 +22,6 @@ data Contents  =  Empty | Lambda | Debris | Asteroid | Boundary deriving (Eq, Sh
 type Size      =  Int
 type Pos       =  (Int, Int)
 type Space     =  Map Pos Contents
-
-
 
 -- | Parses a space file, such as the ones in the examples folder.
 parseSpace :: Parser Char Space
@@ -135,18 +134,36 @@ makeTurn h dir
   | dir == DRight = cycleNext h
   | otherwise     = h
 
+doCase :: Dir -> Alts -> ArrowState -> ArrowState
+doCase dir (Alts alts) (ArrowState sp p h (Cmds cds)) = ArrowState sp p h (Cmds $ caseCmds ++ cds)
+ where
+  readPos = case dir of
+    DFront -> updatePos p h
+    DLeft  -> updatePos p (cyclePrev h)
+    DRight -> updatePos p (cycleNext h)
+  pattern' = case fromMaybe Boundary $ L.lookup readPos sp of
+    Empty    -> PEmpty
+    Lambda   -> PLambda
+    Debris   -> PDebris
+    Asteroid -> PAsteroid
+    Boundary -> PBoundary
+  caseCmds = case find (\(Alt p _) -> p == pattern') alts of
+    Nothing        -> let (Alt _ (Cmds c)) = fromJust $ find (\(Alt p _) -> p == PUnderScore) alts in c
+    Just (Alt _ (Cmds c)) -> c
+
 step :: Environment -> ArrowState -> Step
 step env as@(ArrowState sp p h (Cmds [])) = Done sp p h
 step env as@(ArrowState sp p h st@(Cmds (cd : cds))) =
   case cd of
-    CMDGo              -> Ok $ ArrowState sp (updatePos p h) h st
-    CMDTake            -> Ok $ ArrowState (takePattern sp p) p h st
-    CMDMark            -> Ok $ ArrowState (markPattern sp p) p h st
-    CMDNothing         -> Ok as
-    (CMDTurn dir)      -> Ok $ ArrowState sp p (makeTurn h dir) st
-    (CMDCase dir alts) -> Ok as
-    (CMDIdent ident)   -> case L.lookup ident env of
-      Nothing   -> Fail "Identifier not found"
-      Just cmds -> Ok $ ArrowState sp p h (Cmds $ cmds ++ cds)
+    CMDGo            -> Ok $ ArrowState sp (updatePos p h) h st
+    CMDTake          -> Ok $ ArrowState (takePattern sp p) p h st
+    CMDMark          -> Ok $ ArrowState (markPattern sp p) p h st
+    CMDNothing       -> Ok as
+    CMDTurn dir      -> Ok $ ArrowState sp p (makeTurn h dir) st
+    CMDCase dir alts -> Ok $ doCase dir alts as
+    CMDIdent ident   ->
+      case L.lookup ident env of
+        Nothing          -> Fail "Identifier not found"
+        Just (Cmds cds') -> Ok $ ArrowState sp p h (Cmds $ cds' ++ cds)
 
 

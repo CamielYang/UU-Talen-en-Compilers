@@ -1,14 +1,24 @@
 module Main where
 
-import Algebra
-import Model
-import Interpreter
-import Lexer
-import Parser
+import           Algebra
+import           Interpreter
+import           Lexer
+import           Model
+import           Parser
 
 -- Exercise 11
 interactive :: Environment -> ArrowState -> IO ()
-interactive = undefined
+interactive env state = do
+  putStrLn "Press enter to execute a step:"
+  getLine
+  case step env state of
+    Done space _ _ -> do
+      putStrLn $ printSpace space
+    Ok state'@(ArrowState space _ _ _) -> do
+      putStrLn $ printSpace space
+      interactive env state'
+    Fail err -> putStrLn err
+
 
 batch :: Environment -> ArrowState -> (Space, Pos, Heading)
 batch = undefined
