@@ -12,6 +12,7 @@ import           Data.Char         (isSpace)
 import           Algebra
 import           Data.Foldable     (find)
 import           Data.Maybe        (Maybe, fromJust, fromMaybe)
+import           Debug.Trace
 import           Lexer
 import           Model
 import           Parser
@@ -113,10 +114,10 @@ testEnvironment = do
 
 -- | Exercise 9
 updatePos :: Pos -> Heading -> Pos
-updatePos (x, y) North = (x    , y + 1)
-updatePos (x, y) East  = (x + 1, y    )
-updatePos (x, y) South = (x    , y - 1)
-updatePos (x, y) West  = (x - 1, y    )
+updatePos (y, x) North = (y - 1, x    )
+updatePos (y, x) East  = (y    , x + 1)
+updatePos (y, x) South = (y + 1, x    )
+updatePos (y, x) West  = (y    , x - 1)
 
 takePattern :: Space -> Pos -> Space
 takePattern spaceMap pos
@@ -135,32 +136,32 @@ makeTurn h dir
   | otherwise     = h
 
 doCase :: Dir -> Alts -> ArrowState -> ArrowState
-doCase dir (Alts alts) (ArrowState sp p h (Cmds cds)) = ArrowState sp p h (Cmds $ caseCmds ++ cds)
- where
-  readPos = case dir of
-    DFront -> updatePos p h
-    DLeft  -> updatePos p (cyclePrev h)
-    DRight -> updatePos p (cycleNext h)
-  pattern' = case fromMaybe Boundary $ L.lookup readPos sp of
-    Empty    -> PEmpty
-    Lambda   -> PLambda
-    Debris   -> PDebris
-    Asteroid -> PAsteroid
-    Boundary -> PBoundary
-  caseCmds = case find (\(Alt p _) -> p == pattern') alts of
-    Nothing        -> let (Alt _ (Cmds c)) = fromJust $ find (\(Alt p _) -> p == PUnderScore) alts in c
-    Just (Alt _ (Cmds c)) -> c
+doCase dir (Alts alts) (ArrowState sp p h (Cmds cds)) = trace (show alts ++ show pattern') $
+  case find (\(Alt p _) -> p == pattern') alts of
+    Nothing               -> let (Alt _ (Cmds c)) = fromJust $ find (\(Alt p _) -> p == PUnderScore) alts in ArrowState sp p h (Cmds $ c ++ cds)
+    Just (Alt _ (Cmds c)) -> ArrowState sp p h (Cmds $ c ++ cds)
+  where
+    readPos = case dir of
+      DFront -> updatePos p h
+      DLeft  -> updatePos p (cyclePrev h)
+      DRight -> updatePos p (cycleNext h)
+    pattern' = case fromMaybe Boundary $ L.lookup readPos sp of
+      Empty    -> PEmpty
+      Lambda   -> PLambda
+      Debris   -> PDebris
+      Asteroid -> PAsteroid
+      Boundary -> PBoundary
 
 step :: Environment -> ArrowState -> Step
 step env as@(ArrowState sp p h (Cmds [])) = Done sp p h
 step env as@(ArrowState sp p h st@(Cmds (cd : cds))) =
-  case cd of
-    CMDGo            -> Ok $ ArrowState sp (updatePos p h) h st
-    CMDTake          -> Ok $ ArrowState (takePattern sp p) p h st
-    CMDMark          -> Ok $ ArrowState (markPattern sp p) p h st
-    CMDNothing       -> Ok as
-    CMDTurn dir      -> Ok $ ArrowState sp p (makeTurn h dir) st
-    CMDCase dir alts -> Ok $ doCase dir alts as
+  trace (show p ++ show st ++ show h ++ "\n") $ case cd of
+    CMDGo            -> Ok $ ArrowState sp (updatePos p h) h (Cmds cds)
+    CMDTake          -> Ok $ ArrowState (takePattern sp p) p h (Cmds cds)
+    CMDMark          -> Ok $ ArrowState (markPattern sp p) p h (Cmds cds)
+    CMDNothing       -> Ok $ ArrowState sp p h (Cmds cds)
+    CMDTurn dir      -> Ok $ ArrowState sp p (makeTurn h dir) (Cmds cds)
+    CMDCase dir alts -> Ok $ doCase dir alts (ArrowState sp p h (Cmds cds))
     CMDIdent ident   ->
       case L.lookup ident env of
         Nothing          -> Fail "Identifier not found"
