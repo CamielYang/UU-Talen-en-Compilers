@@ -48,14 +48,55 @@ batch env state = case step env state of
 --   putStrLn ""
 --   print arr
 
+-- Adding natural numbers
+arrowFile      = "examples/Add.arrow"
+spaceFile      = "examples/AddInput.space"
+initialPos     = (0, 0)
+initialHeading = East
+
+-- Remove debris
+-- arrowFile      = "examples/RemoveDebris.arrow"
+-- spaceFile      = "examples/SampleSpace.space"
+-- initialPos     = (1, 4)
+-- initialHeading = North
+
+-- Maze
+-- arrowFile      = "examples/Find.arrow"
+-- spaceFile      = "examples/Maze.space"
+-- initialPos     = (0,2) -- (0, 0), (7, 7), (5, 0) (0, 2)
+-- initialHeading = North
+
 main :: IO ()
 main = do
-  arrowChars <- readFile "examples/Add.arrow"
-  spaceChars <- readFile "examples/AddInput.space"
+  arrowChars <- readFile arrowFile
+  spaceChars <- readFile spaceFile
+
   let env = toEnvironment arrowChars
   let startCmds = fromJust $ L.lookup "start" env
   let [(space, _)] = parse parseSpace spaceChars
-  let state = ArrowState space (0, 0) East startCmds
-  interactive env state
+  let state = ArrowState space initialPos initialHeading startCmds
+
+  askForInput env state
+
+askForInput :: Environment -> ArrowState -> IO ()
+askForInput env state = do
+  putStrLn $ "1 - Interactive mode" ++ "\n"
+          ++ "2 - Batch mode" ++ "\n"
+          ++ "3 - Exit" ++ "\n"
+  choice <- getLine
+  case choice of
+    "1" -> interactive env state
+    "2" -> do
+      let (ArrowState spaceStart _ _ _) = state
+      let (spaceResult, pos', heading') = batch env state
+
+      putStrLn $ "Space start:" ++ "\n"
+              ++ printSpace spaceStart
+      putStrLn $ "Space result:" ++ "\n"
+              ++ printSpace spaceResult
+    "3" -> return ()
+    _   -> do
+      putStrLn "Invalid input"
+      askForInput env state
 
 

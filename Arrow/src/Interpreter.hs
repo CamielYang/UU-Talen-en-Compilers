@@ -136,7 +136,7 @@ makeTurn h dir
   | otherwise     = h
 
 doCase :: Dir -> Alts -> ArrowState -> ArrowState
-doCase dir (Alts alts) (ArrowState sp p h (Cmds cds)) = trace (show alts ++ show pattern') $
+doCase dir (Alts alts) (ArrowState sp p h (Cmds cds)) =
   case find (\(Alt p _) -> p == pattern') alts of
     Nothing               -> let (Alt _ (Cmds c)) = fromJust $ find (\(Alt p _) -> p == PUnderScore) alts in ArrowState sp p h (Cmds $ c ++ cds)
     Just (Alt _ (Cmds c)) -> ArrowState sp p h (Cmds $ c ++ cds)
@@ -155,7 +155,7 @@ doCase dir (Alts alts) (ArrowState sp p h (Cmds cds)) = trace (show alts ++ show
 step :: Environment -> ArrowState -> Step
 step env as@(ArrowState sp p h (Cmds [])) = Done sp p h
 step env as@(ArrowState sp p h st@(Cmds (cd : cds))) =
-  trace (show p ++ show st ++ show h ++ "\n") $ case cd of
+  case cd of
     CMDGo            -> Ok $ ArrowState sp (updatePos p h) h (Cmds cds)
     CMDTake          -> Ok $ ArrowState (takePattern sp p) p h (Cmds cds)
     CMDMark          -> Ok $ ArrowState (markPattern sp p) p h (Cmds cds)
