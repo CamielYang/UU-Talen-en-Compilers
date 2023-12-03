@@ -41,13 +41,11 @@ noUndefinedAlg = all f
   where
     f (Rule _ _) = True
     f undefined  = False
-
 noUndefined :: Program -> Bool
 noUndefined = foldProgram noUndefinedAlg
 
 hasStartAlg :: ProgramAlgebra Bool
 hasStartAlg = any (\(Rule id _) -> id == "start")
-
 hasStart :: Program -> Bool
 hasStart = foldProgram hasStartAlg
 
@@ -57,7 +55,6 @@ noDuplicatesAlg = f []
     f :: [String] -> [Rule] -> Bool
     f _ []                    = True
     f ids (Rule id _ : rules) = id `notElem` ids && f (id : ids) rules
-
 noDuplicates :: Program -> Bool
 noDuplicates = foldProgram noDuplicatesAlg
 
@@ -80,7 +77,6 @@ validCmdCaseAlg = (True, True, True, True, isTrue, case', isTrue)
             ps = nub $ foldr f [] alts
             f (Alt PUnderScore _) b = b
             f (Alt p _) b           = p : b
-
 validCmdCase :: Cmd -> Bool
 validCmdCase = foldCmd validCmdCaseAlg
 
@@ -93,7 +89,6 @@ validCmdCaseProgAlg = f
 
     validCmdCaseCmds :: Cmds -> Bool
     validCmdCaseCmds (Cmds cmds) = all validCmdCase cmds
-
 validCmdCaseProg :: Program -> Bool
 validCmdCaseProg = foldProgram validCmdCaseProgAlg
 
