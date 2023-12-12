@@ -6,33 +6,30 @@ import           Model
 
 
 -- Exercise 5
-type CmdAlgebra r = (r,                -- CMDGo
-                     r,                -- CMDTake
-                     r,                -- CMDMark
-                     r,                -- CMDNothing
-                     Dir -> r,         -- CMDTurn Dir
-                     Dir -> Alts -> r, -- CMDCase Dir Alts
-                     String -> r)      -- CMDIdent String
+data CmdAlgebra r = CmdAlg {
+  cmdGo      :: r,
+  cmdTake    :: r,
+  cmdMark    :: r,
+  cmdNothing :: r,
+  cmdTurn    :: Dir -> r,
+  cmdCase    :: Dir -> Alts -> r,
+  cmdIdent   :: String -> r
+}
+
 foldCmd :: CmdAlgebra r -> Cmd -> r
-foldCmd (go,
-         take,
-         mark,
-         nothing,
-         turn,
-         case',
-         ident) = f
+foldCmd alg = f
   where
-    f CMDGo              = go
-    f CMDTake            = take
-    f CMDMark            = mark
-    f CMDNothing         = nothing
-    f (CMDTurn dir)      = turn dir
-    f (CMDCase dir alts) = case' dir alts
-    f (CMDIdent id)      = ident id
+    f CMDGo              = cmdGo      alg
+    f CMDTake            = cmdTake    alg
+    f CMDMark            = cmdMark    alg
+    f CMDNothing         = cmdNothing alg
+    f (CMDTurn dir)      = cmdTurn    alg dir
+    f (CMDCase dir alts) = cmdCase    alg dir alts
+    f (CMDIdent id)      = cmdIdent   alg id
 
 -- Exercise 6
 
-type ProgramAlgebra r = ([Rule] -> r) -- Program
+type ProgramAlgebra r = [Rule] -> r -- Program
 foldProgram :: ProgramAlgebra r -> Program -> r
 foldProgram f (Program rules) = f rules
 
@@ -59,7 +56,16 @@ noDuplicates :: Program -> Bool
 noDuplicates = foldProgram noDuplicatesAlg
 
 validCmdCaseAlg :: CmdAlgebra Bool
-validCmdCaseAlg = (True, True, True, True, isTrue, case', isTrue)
+validCmdCaseAlg =
+  CmdAlg {
+    cmdGo      = True,
+    cmdTake    = True,
+    cmdMark    = True,
+    cmdNothing = True,
+    cmdTurn    = isTrue,
+    cmdCase    = case',
+    cmdIdent   = isTrue
+  }
   where
     isTrue _ = True
 
