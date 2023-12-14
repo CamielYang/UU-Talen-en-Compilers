@@ -33,13 +33,28 @@ type ProgramAlgebra r = [Rule] -> r -- Program
 foldProgram :: ProgramAlgebra r -> Program -> r
 foldProgram f (Program rules) = f rules
 
-noUndefinedAlg :: ProgramAlgebra Bool
-noUndefinedAlg = all f
+validCmdAlg :: [Rule] -> CmdAlgebra Bool
+validCmdAlg rs =
+  CmdAlg {
+    cmdGo      = True,
+    cmdTake    = True,
+    cmdMark    = True,
+    cmdNothing = True,
+    cmdTurn    = const True,
+    cmdCase    = \_ _ -> True,
+    cmdIdent   = ident
+  }
   where
-    f (Rule _ _) = True
-    f undefined  = False
-noUndefined :: Program -> Bool
-noUndefined = foldProgram noUndefinedAlg
+    ident id = any (\(Rule id' _) -> id == id') rs
+validCmd :: [Rule] -> Cmd -> Bool
+validCmd rs = foldCmd $ validCmdAlg rs
+
+noUndefinedRulesAlg :: ProgramAlgebra Bool
+noUndefinedRulesAlg rs = all f rs
+  where
+    f (Rule id (Cmds cmds)) = all (validCmd rs) cmds
+noUndefinedRules :: Program -> Bool
+noUndefinedRules = foldProgram noUndefinedRulesAlg
 
 hasStartAlg :: ProgramAlgebra Bool
 hasStartAlg = any (\(Rule id _) -> id == "start")
@@ -62,13 +77,11 @@ validCmdCaseAlg =
     cmdTake    = True,
     cmdMark    = True,
     cmdNothing = True,
-    cmdTurn    = isTrue,
+    cmdTurn    = const True,
     cmdCase    = case',
-    cmdIdent   = isTrue
+    cmdIdent   = const True
   }
   where
-    isTrue _ = True
-
     case' :: Dir -> Alts -> Bool
     case' _ (Alts alts) = hasUnderScore || hasAllPatterns
       where
@@ -102,7 +115,7 @@ testProgram :: Program
 testProgram = Program [Rule "start" (Cmds [CMDTurn DRight,CMDGo,CMDTurn DLeft,CMDIdent "firstArg"]),Rule "turnAround" (Cmds [CMDTurn DRight,CMDTurn DRight]),Rule "return" (Cmds [CMDCase DFront (Alts [Alt PBoundary (Cmds [CMDNothing]),Alt PUnderScore (Cmds [CMDGo,CMDIdent "return"])])]),Rule "firstArg" (Cmds [CMDCase DLeft (Alts [Alt PLambda (Cmds [CMDGo,CMDIdent "firstArg",CMDMark,CMDGo]),Alt PUnderScore (Cmds [CMDIdent "turnAround",CMDIdent "return",CMDTurn DLeft,CMDGo,CMDGo,CMDTurn DLeft,CMDIdent "secondArg"])])]),Rule "secondArg" (Cmds [CMDCase DLeft (Alts [Alt PLambda (Cmds [CMDGo,CMDIdent "secondArg",CMDMark,CMDGo]),Alt PUnderScore (Cmds [CMDIdent "turnAround",CMDIdent "return",CMDTurn DLeft,CMDGo,CMDTurn DLeft])])])]
 
 checkProgram :: Program -> Bool
-checkProgram p = noUndefined      p
+checkProgram p = noUndefinedRules p
               && hasStart         p
               && noDuplicates     p
               && validCmdCaseProg p

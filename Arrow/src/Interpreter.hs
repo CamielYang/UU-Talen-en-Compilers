@@ -3,7 +3,6 @@ module Interpreter where
 import           ParseLib.Abstract
 import           Prelude           hiding ((<$), (<*))
 
-import           Data.Map          (Map)
 import qualified Data.Map          as L
 
 import           Control.Monad     (replicateM)
@@ -22,7 +21,7 @@ data Contents  = Empty | Lambda | Debris | Asteroid | Boundary deriving (Eq, Sho
 
 type Size      = Int
 type Pos       = (Int, Int)
-type Space     = Map Pos Contents
+type Space     = L.Map Pos Contents
 
 -- | Parses a space file, such as the ones in the examples folder.
 parseSpace :: Parser Char Space
@@ -88,7 +87,7 @@ type Ident       = IdentT
 type Commands    = Cmds
 type Heading     = Compass
 
-type Environment = Map Ident Commands
+type Environment = L.Map Ident Commands
 
 type Stack       = Commands
 data ArrowState  = ArrowState Space Pos Heading Stack
@@ -150,7 +149,7 @@ makeTurn h dir
   | otherwise     = h
 
 sensoryRead :: ArrowState -> Dir -> Pattern
-sensoryRead (ArrowState sp p h st) dir = contentToPattern $ fromMaybe Boundary $ L.lookup readPos sp
+sensoryRead (ArrowState sp p h st) dir = contentToPattern $ L.findWithDefault Boundary readPos sp
   where
     readPos =
       case dir of
@@ -159,7 +158,12 @@ sensoryRead (ArrowState sp p h st) dir = contentToPattern $ fromMaybe Boundary $
         DRight -> updatePos p (cycleNext h)
 
 goCommand :: ArrowState -> Step
-goCommand (ArrowState sp p h st)       = Ok $ ArrowState sp (updatePos p h) h (pop st)
+goCommand (ArrowState sp p h st)
+  | pattern' `elem` [Lambda, Debris, Empty] = Ok $ ArrowState sp (updatePos p h) h (pop st)
+  | otherwise                               = Ok $ ArrowState sp p h (pop st)
+  where
+    newPos   = updatePos p h
+    pattern' = fromJust $ L.lookup newPos sp
 
 takeCommand :: ArrowState -> Step
 takeCommand (ArrowState sp p h st)     = Ok $ ArrowState (takePattern sp p) p h (pop st)

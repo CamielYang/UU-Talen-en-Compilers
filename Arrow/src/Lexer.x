@@ -15,38 +15,38 @@ tokens :-
   $white+                ;
 
   -- Commands
-  "go"                   { const TGo }
-  "take"                 { const TTake }
-  "mark"                 { const TMark }
+  "go"                   { const TGo      }
+  "take"                 { const TTake    }
+  "mark"                 { const TMark    }
   "nothing"              { const TNothing }
-  "turn"                 { const TTurn }
+  "turn"                 { const TTurn    }
 
   -- Directions
-  "left"                 { const TLeft }
+  "left"                 { const TLeft  }
   "right"                { const TRight }
-  "front"                { const TFront }
+  "front"                { const TFront}
 
   --  Pattern
-  "Empty"                { const TEmpty }
-  "Lambda"               { const TLambda }
-  "Debris"               { const TDebris }
-  "Asteroid"             { const TAsteroid }
-  "Boundary"             { const TBoundary }
+  "Empty"                { const TEmpty      }
+  "Lambda"               { const TLambda     }
+  "Debris"               { const TDebris     }
+  "Asteroid"             { const TAsteroid   }
+  "Boundary"             { const TBoundary   }
   "_"                    { const TUnderScore }
 
   -- Case Keywords
   "case"                 { const TCase }
-  "of"                   { const TOf }
-  "end"                  { const TEnd }
+  "of"                   { const TOf   }
+  "end"                  { const TEnd  }
 
   -- Symbols
   ";"                    { const TSemiColon }
-  "->"                   { const TArrow }
-  "."                    { const TDot }
-  ","                    { const TComma }
+  "->"                   { const TArrow     }
+  "."                    { const TDot       }
+  ","                    { const TComma     }
 
   --  Ident
-  [$alpha $digit \+ \-]+ { \s -> TIdent s }
+  [$alpha $digit \+ \-]+ { TIdent }
 
 
 
