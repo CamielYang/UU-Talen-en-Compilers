@@ -16,6 +16,17 @@ data CmdAlgebra r = CmdAlg {
   cmdIdent   :: String -> r
 }
 
+baseCmdAlgebra :: CmdAlgebra Bool
+baseCmdAlgebra = CmdAlg {
+  cmdGo      = True,
+  cmdTake    = True,
+  cmdMark    = True,
+  cmdNothing = True,
+  cmdTurn    = const True,
+  cmdCase    = \_ _ -> True,
+  cmdIdent   = const True
+}
+
 foldCmd :: CmdAlgebra r -> Cmd -> r
 foldCmd alg = f
   where
@@ -34,16 +45,7 @@ foldProgram :: ProgramAlgebra r -> Program -> r
 foldProgram f (Program rules) = f rules
 
 validCmdAlg :: [Rule] -> CmdAlgebra Bool
-validCmdAlg rs =
-  CmdAlg {
-    cmdGo      = True,
-    cmdTake    = True,
-    cmdMark    = True,
-    cmdNothing = True,
-    cmdTurn    = const True,
-    cmdCase    = \_ _ -> True,
-    cmdIdent   = ident
-  }
+validCmdAlg rs = baseCmdAlgebra { cmdIdent = ident }
   where
     ident id = any (\(Rule id' _) -> id == id') rs
 validCmd :: [Rule] -> Cmd -> Bool
@@ -71,16 +73,7 @@ noDuplicates :: Program -> Bool
 noDuplicates = foldProgram noDuplicatesAlg
 
 validCmdCaseAlg :: CmdAlgebra Bool
-validCmdCaseAlg =
-  CmdAlg {
-    cmdGo      = True,
-    cmdTake    = True,
-    cmdMark    = True,
-    cmdNothing = True,
-    cmdTurn    = const True,
-    cmdCase    = case',
-    cmdIdent   = const True
-  }
+validCmdCaseAlg = baseCmdAlgebra { cmdCase = case' }
   where
     case' :: Dir -> Alts -> Bool
     case' _ (Alts alts) = hasUnderScore || hasAllPatterns
