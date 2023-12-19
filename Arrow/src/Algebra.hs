@@ -39,7 +39,6 @@ data Algebra p d c a r pr = Algebra {
   program     :: [r] -> pr
 }
 
-
 foldAlgebra :: Algebra p d c a r pr -> Program -> pr
 foldAlgebra alg = foldProgram
   where
@@ -92,20 +91,20 @@ baseAlgebra = Algebra {
   program     = const True
 }
 
-hasStart' :: Program -> Bool
-hasStart' = foldAlgebra baseAlgebra {
+hasStart :: Program -> Bool
+hasStart = foldAlgebra baseAlgebra {
     rule    = const,
     program = elem "start"
   }
 
-noDuplicates' :: Program -> Bool
-noDuplicates' = foldAlgebra baseAlgebra {
+noDuplicates :: Program -> Bool
+noDuplicates = foldAlgebra baseAlgebra {
     rule   = const,
     program = \rules -> nub rules == rules
   }
 
-validCmdCase' :: Program -> Bool
-validCmdCase' = foldAlgebra baseAlgebra {
+validCmdCase :: Program -> Bool
+validCmdCase = foldAlgebra baseAlgebra {
     pEmpty      = PEmpty,
     pLambda     = PLambda,
     pDebris     = PDebris,
@@ -117,8 +116,8 @@ validCmdCase' = foldAlgebra baseAlgebra {
                || length (nub alts) == 5
   }
 
-noUndefinedRules' :: Program -> Bool
-noUndefinedRules' = foldAlgebra baseAlgebra {
+noUndefinedRules :: Program -> Bool
+noUndefinedRules = foldAlgebra baseAlgebra {
     program = \rs -> let (is, cs) = unzip rs in all (all (`elem` is)) cs
   , rule    = \s ss -> (s, concat ss)
   , go      = []
@@ -131,8 +130,11 @@ noUndefinedRules' = foldAlgebra baseAlgebra {
   , alt     = const id
   }
 
-checkProgram' :: Program -> Bool
-checkProgram' p = noUndefinedRules' p
-               && hasStart'         p
-               && noDuplicates'     p
-               && validCmdCase'     p
+testProgram :: Program
+testProgram = Program [Rule "start" (Cmds [CMDTurn DRight,CMDGo,CMDTurn DLeft,CMDIdent "firstArg"]),Rule "turnAround" (Cmds [CMDTurn DRight,CMDTurn DRight]),Rule "return" (Cmds [CMDCase DFront (Alts [Alt PBoundary (Cmds [CMDNothing]),Alt PUnderScore (Cmds [CMDGo,CMDIdent "return"])])]),Rule "firstArg" (Cmds [CMDCase DLeft (Alts [Alt PLambda (Cmds [CMDGo,CMDIdent "firstArg",CMDMark,CMDGo]),Alt PUnderScore (Cmds [CMDIdent "turnAround",CMDIdent "return",CMDTurn DLeft,CMDGo,CMDGo,CMDTurn DLeft,CMDIdent "secondArg"])])]),Rule "secondArg" (Cmds [CMDCase DLeft (Alts [Alt PLambda (Cmds [CMDGo,CMDIdent "secondArg",CMDMark,CMDGo]),Alt PUnderScore (Cmds [CMDIdent "turnAround",CMDIdent "return",CMDTurn DLeft,CMDGo,CMDTurn DLeft])])])]
+
+checkProgram :: Program -> Bool
+checkProgram p = noUndefinedRules p
+               && hasStart        p
+               && noDuplicates    p
+               && validCmdCase    p
