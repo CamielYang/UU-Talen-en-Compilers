@@ -14,6 +14,8 @@ prods : prod                  { [$1] }
       | prod prods            { $1 : $2 }
 ```
 
+According to the documentation it is more efficient to use left-resursive parsing for Happy.
+
 If we want to do this in parser combinators we can use a combination of folds and flips to create right- or left-associativity.
 
 ```haskell

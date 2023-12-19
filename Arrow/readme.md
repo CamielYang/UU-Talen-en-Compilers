@@ -1,3 +1,6 @@
+Studentnumber: 953741
+Email        : c.yang1@students.uu.nl
+
 # Arrow
 A framework for the Arrow assignment of the course Talen & Compilers at the University of Utrecht.
 
@@ -7,7 +10,7 @@ Running `cabal build` or `cabal run` will compile the alex and happy code into H
 files, and compile your project with those, without ever showing them to you.
 
 You can also manually call the alex and happy executables to do this first step,
-and then run ghc(i) on the resulting Haskell files, but then you have to remember 
+and then run ghc(i) on the resulting Haskell files, but then you have to remember
 to do so on each change: Not recommended!
 
 ## Testing
