@@ -99,7 +99,7 @@ data Step        = Done Space Pos Heading
 -- | Exercise 8
 toEnvironment :: String -> Environment
 toEnvironment chars
-  | checkProgram pgrm = L.fromList $ map (\(Rule i c) -> (i, c)) rs
+  | checkProgram' pgrm = L.fromList $ map (\(Rule i c) -> (i, c)) rs
   | otherwise         = error "Program is not valid"
   where
     tokens :: [Token]

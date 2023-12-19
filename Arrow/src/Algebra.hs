@@ -6,110 +6,133 @@ import           Model
 
 
 -- Exercise 5
-data CmdAlgebra r = CmdAlg {
-  cmdGo      :: r,
-  cmdTake    :: r,
-  cmdMark    :: r,
-  cmdNothing :: r,
-  cmdTurn    :: Dir -> r,
-  cmdCase    :: Dir -> Alts -> r,
-  cmdIdent   :: String -> r
+data Algebra p d c a r pr = Algebra {
+  -- Pattern
+  pEmpty      :: p,
+  pLambda     :: p,
+  pDebris     :: p,
+  pAsteroid   :: p,
+  pBoundary   :: p,
+  pUnderScore :: p,
+
+  -- Directions
+  dLeft       :: d,
+  dRight      :: d,
+  dFront      :: d,
+
+  -- Commands
+  go          :: c,
+  take'       :: c,
+  mark        :: c,
+  nothing     :: c,
+  turn        :: d -> c,
+  case'       :: d -> [a] -> c,
+  ident       :: IdentT -> c,
+
+  -- Alternatives
+  alt         :: p -> [c] -> a,
+
+  -- Rules
+  rule        :: IdentT -> [c] -> r,
+
+  -- Program
+  program     :: [r] -> pr
 }
 
-baseCmdAlgebra :: CmdAlgebra Bool
-baseCmdAlgebra = CmdAlg {
-  cmdGo      = True,
-  cmdTake    = True,
-  cmdMark    = True,
-  cmdNothing = True,
-  cmdTurn    = const True,
-  cmdCase    = \_ _ -> True,
-  cmdIdent   = const True
-}
 
-foldCmd :: CmdAlgebra r -> Cmd -> r
-foldCmd alg = f
+foldAlgebra :: Algebra p d c a r pr -> Program -> pr
+foldAlgebra alg = foldProgram
   where
-    f CMDGo              = cmdGo      alg
-    f CMDTake            = cmdTake    alg
-    f CMDMark            = cmdMark    alg
-    f CMDNothing         = cmdNothing alg
-    f (CMDTurn dir)      = cmdTurn    alg dir
-    f (CMDCase dir alts) = cmdCase    alg dir alts
-    f (CMDIdent id)      = cmdIdent   alg id
+    foldProgram (Program rules) = program alg (map foldRule rules)
+    foldRule (Rule id (Cmds cmds))   = rule alg id (map foldCmd cmds)
+    foldCmd CMDGo                     = go alg
+    foldCmd CMDTake                   = take' alg
+    foldCmd CMDMark                   = mark alg
+    foldCmd CMDNothing                = nothing alg
+    foldCmd (CMDTurn dir)             = turn alg (foldDir dir)
+    foldCmd (CMDCase dir (Alts alts)) = case' alg (foldDir dir) (map foldAlt alts)
+    foldCmd (CMDIdent id)             = ident alg id
+    foldDir DLeft  = dLeft alg
+    foldDir DRight = dRight alg
+    foldDir DFront = dFront alg
+    foldAlt (Alt p (Cmds cmds))       = alt alg (foldPattern p) (map foldCmd cmds)
+    foldPattern PEmpty                = pEmpty alg
 
 -- Exercise 6
+baseAlgebra = Algebra {
+  -- Pattern
+  pEmpty      = True,
+  pLambda     = True,
+  pDebris     = True,
+  pAsteroid   = True,
+  pBoundary   = True,
+  pUnderScore = True,
 
-type ProgramAlgebra r = [Rule] -> r -- Program
-foldProgram :: ProgramAlgebra r -> Program -> r
-foldProgram f (Program rules) = f rules
+  -- Directions
+  dLeft       = True,
+  dRight      = True,
+  dFront      = True,
 
-validCmdAlg :: [Rule] -> CmdAlgebra Bool
-validCmdAlg rs = baseCmdAlgebra { cmdIdent = ident }
-  where
-    ident id = any (\(Rule id' _) -> id == id') rs
-validCmd :: [Rule] -> Cmd -> Bool
-validCmd rs = foldCmd $ validCmdAlg rs
+  -- Commands
+  go          = True,
+  take'       = True,
+  mark        = True,
+  nothing     = True,
+  turn        = const True,
+  case'       = \_ _ -> True,
+  ident       = const True,
 
-noUndefinedRulesAlg :: ProgramAlgebra Bool
-noUndefinedRulesAlg rs = all f rs
-  where
-    f (Rule id (Cmds cmds)) = all (validCmd rs) cmds
-noUndefinedRules :: Program -> Bool
-noUndefinedRules = foldProgram noUndefinedRulesAlg
+  -- Alternatives
+  alt         = \_ _ -> True,
 
-hasStartAlg :: ProgramAlgebra Bool
-hasStartAlg = any (\(Rule id _) -> id == "start")
-hasStart :: Program -> Bool
-hasStart = foldProgram hasStartAlg
+  -- Rules
+  rule        = \_ _ -> True,
 
-noDuplicatesAlg :: ProgramAlgebra Bool
-noDuplicatesAlg = f []
-  where
-    f :: [String] -> [Rule] -> Bool
-    f _ []                    = True
-    f ids (Rule id _ : rules) = id `notElem` ids && f (id : ids) rules
-noDuplicates :: Program -> Bool
-noDuplicates = foldProgram noDuplicatesAlg
+  -- Program
+  program     = const True
+}
 
-validCmdCaseAlg :: CmdAlgebra Bool
-validCmdCaseAlg = baseCmdAlgebra { cmdCase = case' }
-  where
-    case' :: Dir -> Alts -> Bool
-    case' _ (Alts alts) = hasUnderScore || hasAllPatterns
-      where
-        hasUnderScore = case find f alts of
-                          Nothing -> False
-                          Just _  -> True
-          where
-            f (Alt PUnderScore _) = True
-            f _                   = False
-        hasAllPatterns = length ps == 5
-          where
-            ps = nub $ foldr f [] alts
-            f (Alt PUnderScore _) b = b
-            f (Alt p _) b           = p : b
-validCmdCase :: Cmd -> Bool
-validCmdCase = foldCmd validCmdCaseAlg
+hasStart' :: Program -> Bool
+hasStart' = foldAlgebra baseAlgebra {
+    rule    = const,
+    program = elem "start"
+  }
 
-validCmdCaseProgAlg :: ProgramAlgebra Bool
-validCmdCaseProgAlg = f
-  where
-    f :: [Rule] -> Bool
-    f []                    = True
-    f (Rule _ cmds : rules) = validCmdCaseCmds cmds && f rules
+noDuplicates' :: Program -> Bool
+noDuplicates' = foldAlgebra baseAlgebra {
+    rule   = const,
+    program = \rules -> nub rules == rules
+  }
 
-    validCmdCaseCmds :: Cmds -> Bool
-    validCmdCaseCmds (Cmds cmds) = all validCmdCase cmds
-validCmdCaseProg :: Program -> Bool
-validCmdCaseProg = foldProgram validCmdCaseProgAlg
+validCmdCase' :: Program -> Bool
+validCmdCase' = foldAlgebra baseAlgebra {
+    pEmpty      = PEmpty,
+    pLambda     = PLambda,
+    pDebris     = PDebris,
+    pAsteroid   = PAsteroid,
+    pBoundary   = PBoundary,
+    pUnderScore = PUnderScore,
+    alt         = const,
+    case'       = \_ alts -> PUnderScore `elem` alts
+               || length (nub alts) == 5
+  }
 
-testProgram :: Program
-testProgram = Program [Rule "start" (Cmds [CMDTurn DRight,CMDGo,CMDTurn DLeft,CMDIdent "firstArg"]),Rule "turnAround" (Cmds [CMDTurn DRight,CMDTurn DRight]),Rule "return" (Cmds [CMDCase DFront (Alts [Alt PBoundary (Cmds [CMDNothing]),Alt PUnderScore (Cmds [CMDGo,CMDIdent "return"])])]),Rule "firstArg" (Cmds [CMDCase DLeft (Alts [Alt PLambda (Cmds [CMDGo,CMDIdent "firstArg",CMDMark,CMDGo]),Alt PUnderScore (Cmds [CMDIdent "turnAround",CMDIdent "return",CMDTurn DLeft,CMDGo,CMDGo,CMDTurn DLeft,CMDIdent "secondArg"])])]),Rule "secondArg" (Cmds [CMDCase DLeft (Alts [Alt PLambda (Cmds [CMDGo,CMDIdent "secondArg",CMDMark,CMDGo]),Alt PUnderScore (Cmds [CMDIdent "turnAround",CMDIdent "return",CMDTurn DLeft,CMDGo,CMDTurn DLeft])])])]
+noUndefinedRules' :: Program -> Bool
+noUndefinedRules' = foldAlgebra baseAlgebra {
+    program = \rs -> let (is, cs) = unzip rs in all (all (`elem` is)) cs
+  , rule    = \s ss -> (s, concat ss)
+  , go      = []
+  , take'   = []
+  , mark    = []
+  , nothing = []
+  , turn    = const []
+  , case'   = \_ as -> concat $ concat as
+  , ident   = (: [])
+  , alt     = const id
+  }
 
-checkProgram :: Program -> Bool
-checkProgram p = noUndefinedRules p
-              && hasStart         p
-              && noDuplicates     p
-              && validCmdCaseProg p
-
+checkProgram' :: Program -> Bool
+checkProgram' p = noUndefinedRules' p
+               && hasStart'         p
+               && noDuplicates'     p
+               && validCmdCase'     p
