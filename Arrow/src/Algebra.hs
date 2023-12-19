@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use lambda-case" #-}
 module Algebra where
 
 import           Data.List
@@ -118,16 +120,24 @@ validCmdCase = foldAlgebra baseAlgebra {
 
 noUndefinedRules :: Program -> Bool
 noUndefinedRules = foldAlgebra baseAlgebra {
-    program = \rs -> let (is, cs) = unzip rs in all (all (`elem` is)) cs
-  , rule    = \s ss -> (s, concat ss)
-  , go      = []
-  , take'   = []
-  , mark    = []
-  , nothing = []
-  , turn    = const []
-  , case'   = \_ as -> concat $ concat as
-  , ident   = (: [])
-  , alt     = const id
+    go      = Nothing
+  , take'   = Nothing
+  , mark    = Nothing
+  , nothing = Nothing
+  , turn    = const Nothing
+  , case'   = \_ _ -> Nothing
+  , ident   = Just
+
+  , alt     = const
+  , rule    = (,)
+
+  , program =
+      \rules -> let (rs, cs) = unzip rules in
+        all (all (
+          \z -> case z of
+            Nothing -> True
+            Just z' -> z' `elem` rs
+        )) cs
   }
 
 testProgram :: Program
@@ -135,6 +145,6 @@ testProgram = Program [Rule "start" (Cmds [CMDTurn DRight,CMDGo,CMDTurn DLeft,CM
 
 checkProgram :: Program -> Bool
 checkProgram p = noUndefinedRules p
-               && hasStart        p
-               && noDuplicates    p
-               && validCmdCase    p
+              && hasStart        p
+              && noDuplicates    p
+              && validCmdCase    p
