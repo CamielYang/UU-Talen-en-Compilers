@@ -3,7 +3,8 @@
 module Algebra where
 
 import           Data.List
-import           GHC.IO    (noDuplicate)
+import           Debug.Trace
+import           GHC.IO      (noDuplicate)
 import           Model
 
 
@@ -120,24 +121,19 @@ validCmdCase = foldAlgebra baseAlgebra {
 
 noUndefinedRules :: Program -> Bool
 noUndefinedRules = foldAlgebra baseAlgebra {
-    go      = Nothing
-  , take'   = Nothing
-  , mark    = Nothing
-  , nothing = Nothing
-  , turn    = const Nothing
-  , case'   = \_ _ -> Nothing
-  , ident   = Just
+    go      = []
+  , take'   = []
+  , mark    = []
+  , nothing = []
+  , turn    = const []
+  , case'   = \_ alts -> concat alts
+  , ident   = (: [])
 
-  , alt     = const
+  , alt     = \ _ cmds -> concat cmds
   , rule    = (,)
 
-  , program =
-      \rs -> let (ids, cmds) = unzip rs in
-        all (all (
-          \z -> case z of
-            Nothing -> True
-            Just z' -> z' `elem` ids
-        )) cmds
+  , program = \rs -> let (ids, cmds) = unzip rs in
+      all (all (all (`elem` ids))) cmds
   }
 
 testProgram :: Program

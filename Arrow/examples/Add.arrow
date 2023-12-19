@@ -10,7 +10,7 @@ return      -> case front of
 firstArg    -> case left of
                  Lambda  ->  go, firstArg, mark, go;
                  _       ->  turnAround, return, turn left, go, go, turn left,
-                             secondArg
+                             secondArgs
                end.
 
 secondArg   -> case left of
