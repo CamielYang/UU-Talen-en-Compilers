@@ -132,12 +132,12 @@ noUndefinedRules = foldAlgebra baseAlgebra {
   , rule    = (,)
 
   , program =
-      \rules -> let (rs, cs) = unzip rules in
+      \rs -> let (ids, cmds) = unzip rs in
         all (all (
           \z -> case z of
             Nothing -> True
-            Just z' -> z' `elem` rs
-        )) cs
+            Just z' -> z' `elem` ids
+        )) cmds
   }
 
 testProgram :: Program
