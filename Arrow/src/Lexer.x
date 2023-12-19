@@ -24,7 +24,7 @@ tokens :-
   -- Directions
   "left"                 { const TLeft  }
   "right"                { const TRight }
-  "front"                { const TFront}
+  "front"                { const TFront }
 
   --  Pattern
   "Empty"                { const TEmpty      }
