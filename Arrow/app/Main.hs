@@ -75,7 +75,7 @@ main = do
   spaceChars <- readFile spaceFile
 
   let env = toEnvironment arrowChars
-  let startCmds = fromJust $ L.lookup "start" env
+  let startCmds = L.findWithDefault (Cmds []) "start" env
   let [(space, _)] = parse parseSpace spaceChars
   let state = ArrowState space initialPos initialHeading startCmds
 

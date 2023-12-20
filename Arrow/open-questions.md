@@ -16,7 +16,9 @@ prods : prod                  { [$1] }
 
 According to the documentation it is more efficient to use left-resursive parsing for Happy.
 
-If we want to do this in parser combinators we can use a combination of folds and flips to create right- or left-associativity.
+In parser combinator however, it is essential not to have left recursive grammar. Otherwise the parser would infinitely call itself.
+
+In some cases we want to have left-associativity. If we want to do this in parser combinators we can use a combination of folds and flips to create right- or left-associativity. This way we can use ambiguous or right-recursive grammar transformed in one with left-associativity
 
 ```haskell
 chainl :: Parser s a → Parser s (a → a → a) → Parser s a

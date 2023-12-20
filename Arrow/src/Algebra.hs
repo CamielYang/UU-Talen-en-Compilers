@@ -45,8 +45,13 @@ data Algebra p d c a r pr = Algebra {
 foldAlgebra :: Algebra p d c a r pr -> Program -> pr
 foldAlgebra alg = foldProgram
   where
-    foldProgram (Program rules) = program alg (map foldRule rules)
-    foldRule (Rule id (Cmds cmds))   = rule alg id (map foldCmd cmds)
+    foldDir DLeft  = dLeft alg
+    foldDir DRight = dRight alg
+    foldDir DFront = dFront alg
+
+    foldPattern PEmpty          = pEmpty alg
+    foldAlt (Alt p (Cmds cmds)) = alt alg (foldPattern p) (map foldCmd cmds)
+
     foldCmd CMDGo                     = go alg
     foldCmd CMDTake                   = take' alg
     foldCmd CMDMark                   = mark alg
@@ -54,11 +59,10 @@ foldAlgebra alg = foldProgram
     foldCmd (CMDTurn dir)             = turn alg (foldDir dir)
     foldCmd (CMDCase dir (Alts alts)) = case' alg (foldDir dir) (map foldAlt alts)
     foldCmd (CMDIdent id)             = ident alg id
-    foldDir DLeft  = dLeft alg
-    foldDir DRight = dRight alg
-    foldDir DFront = dFront alg
-    foldAlt (Alt p (Cmds cmds))       = alt alg (foldPattern p) (map foldCmd cmds)
-    foldPattern PEmpty                = pEmpty alg
+
+    foldRule (Rule id (Cmds cmds)) = rule alg id (map foldCmd cmds)
+    foldProgram (Program rules)    = program alg (map foldRule rules)
+
 
 -- Exercise 6
 baseAlgebra = Algebra {
