@@ -31,4 +31,4 @@ chainr p s =
 
 
 ## Exercise 10
-Yes it does matter. Changing the moment when to add the will also affect the outcome of the space, because you change the order the tasks will be done.
+Yes it does matter. Changing the moment when to add the will also affect the outcome of the space, because you change the order the tasks that will be executed.
