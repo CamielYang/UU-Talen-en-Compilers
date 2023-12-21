@@ -53,16 +53,15 @@ contentsTable =  [ (Empty   , '.' )
 -- Exercise 7
 printSpace :: Space -> String
 printSpace spaceMap =
-    show k ++ "\n"
+    show pos ++ "\n"
  ++ space
   where
-    (k@(rws, clms),_) = L.findMax spaceMap
-    space = L.foldrWithKey f [] spaceMap
-    f (_, clms') content b
-      | clms' == clms = cChar : '\n' : b
-      | otherwise     = cChar : b
-      where
-        cChar = fromJust $ lookup content contentsTable
+    (pos@(rws, clms),_) = L.findMax spaceMap
+    space               = L.foldrWithKey f [] spaceMap
+    cChar content       = fromJust $ lookup content contentsTable
+    f (_, clm) content b
+      | clm == clms = cChar content : '\n' : b
+      | otherwise   = cChar content : b
 
 testPrintSampleSpace = do
   s <- readFile "examples/SampleSpace.space"
