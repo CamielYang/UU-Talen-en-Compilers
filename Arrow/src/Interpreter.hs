@@ -132,22 +132,6 @@ updatePos (y, x) East  = (y    , x + 1)
 updatePos (y, x) South = (y + 1, x    )
 updatePos (y, x) West  = (y    , x - 1)
 
-takePattern :: Space -> Pos -> Space
-takePattern spaceMap pos
-  | pattern' `elem` [Lambda, Debris] = L.insert pos Empty spaceMap
-  | otherwise                          = spaceMap
-  where
-    pattern' = fromJust $ L.lookup pos spaceMap
-
-markPattern :: Space -> Pos -> Space
-markPattern spaceMap pos = L.insert pos Lambda spaceMap
-
-makeTurn :: Heading -> Dir -> Heading
-makeTurn h dir
-  | dir == DLeft  = cyclePrev h
-  | dir == DRight = cycleNext h
-  | otherwise     = h
-
 sensoryRead :: ArrowState -> Dir -> Pattern
 sensoryRead (ArrowState sp p h st) dir = contentToPattern $ L.findWithDefault Boundary readPos sp
   where
@@ -163,26 +147,38 @@ goCommand (ArrowState sp p h st)
   | otherwise                               = Ok $ ArrowState sp p h (pop st)
   where
     newPos   = updatePos p h
-    pattern' = fromJust $ L.lookup newPos sp
+    pattern' = L.findWithDefault Boundary newPos sp
 
 takeCommand :: ArrowState -> Step
-takeCommand (ArrowState sp p h st)     = Ok $ ArrowState (takePattern sp p) p h (pop st)
+takeCommand (ArrowState sp p h st)     = Ok $ ArrowState takeSp p h (pop st)
+  where
+    pattern' = L.findWithDefault Empty p sp
+    takeSp
+      | pattern' `elem` [Lambda, Debris] = L.insert p Empty sp
+      | otherwise                          = sp
 
 markCommand :: ArrowState -> Step
 markCommand (ArrowState sp p h st)     = Ok $ ArrowState (markPattern sp p) p h (pop st)
+  where
+    markPattern spaceMap pos = L.insert pos Lambda spaceMap
 
 nothingCommand :: ArrowState -> Step
 nothingCommand (ArrowState sp p h st)  = Ok $ ArrowState sp p h (pop st)
 
 turnCommand :: ArrowState -> Dir -> Step
 turnCommand (ArrowState sp p h st) dir = Ok $ ArrowState sp p (makeTurn h dir) (pop st)
+  where
+    makeTurn h dir
+      | dir == DLeft  = cyclePrev h
+      | dir == DRight = cycleNext h
+      | otherwise     = h
 
 caseCommand :: ArrowState -> Dir -> Alts -> Step
 caseCommand (ArrowState sp p h st) dir (Alts alts) = Ok $
   case find (\(Alt p _) -> p == scannedPattern) alts of
     Nothing ->
       let (Alt _ caseCmds) = fromJust $ find (\(Alt p _) -> p == PUnderScore) alts in
-      ArrowState sp p h (prepend caseCmds (pop st))
+        ArrowState sp p h (prepend caseCmds (pop st))
     Just (Alt _ caseCmds) -> ArrowState sp p h (prepend caseCmds (pop st))
   where
     scannedPattern = sensoryRead (ArrowState sp p h st) dir
