@@ -49,4 +49,4 @@ run s p x = fst . headOrError . parse (p <* eof) $ x
   headOrError (x : xs) = x
   headOrError []       = error $ "The " <> s <> " returned no full parses."
 
-testExpr = run "parser" (pExpr <* eof) . run "lexer" lexicalScanner $ "// x=1+1*2\nx=1+1*2"
+testExpr = run "parser" (pExpr <* eof) . run "lexer" lexicalScanner $ "a = b = 1"

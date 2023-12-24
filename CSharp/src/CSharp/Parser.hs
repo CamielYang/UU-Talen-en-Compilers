@@ -312,7 +312,7 @@ pExprOr :: Parser Token Expr
 pExprOr = chainl pExprAnd (ExprOper <$> sConditionalOr)
 
 pExpr :: Parser Token Expr
-pExpr = chainl pExprOr (ExprOper <$> sAssignment)
+pExpr = chainr pExprOr (ExprOper <$> sAssignment)
 
 pDecl :: Parser Token Decl
 pDecl = Decl <$> pRetType <*> sLowerId
