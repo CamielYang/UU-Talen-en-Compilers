@@ -69,6 +69,7 @@ printKeyword = \case
   ; KeyWhile -> "while";  KeyReturn -> "return"
   ; KeyTry   -> "try";    KeyCatch  -> "catch"
   ; KeyClass -> "class";  KeyVoid   -> "void"
+  ; KeyFor   -> "for"
   }
 
 -- Concrete syntax of C# punctuation
@@ -94,6 +95,7 @@ data Keyword
   | KeyWhile | KeyReturn
   | KeyTry   | KeyCatch
   | KeyClass | KeyVoid
+  | KeyFor
   deriving (Eq, Show, Ord, Enum, Bounded)
 
 data Punctuation
@@ -269,16 +271,50 @@ pMember =  MemberD <$> pDeclSemi
 pBlock :: Parser Token Stat
 pBlock = StatBlock <$> braced (many pStatDecl)
 
+-- pFor :: Parser Token Stat
+-- pFor = StatFor
+--    <$  keyword KeyFor
+--    <*  punctuation POpen
+--    <*> option (listOf pExprDelc (punctuation Comma)) []
+--    <*  sSemi
+--    <*> pExpr
+--    <*  sSemi
+--    <*> option (listOf pExprDelc (punctuation Comma)) []
+--    <*  punctuation PClose
+--    <*> pStat
+
+
+
+pFor :: Parser Token Stat
+pFor = (\e1 e e2 s -> StatBlock $
+            e1
+         ++ [StatWhile e (StatBlock (s : e2))])
+   <$  keyword KeyFor
+   <*  punctuation POpen
+   <*> option (listOf pExprDecl (punctuation Comma)) []
+   <*  sSemi
+   <*> pExpr
+   <*  sSemi
+   <*> option (listOf pExprDecl (punctuation Comma)) []
+   <*  punctuation PClose
+   <*> pStat
+
 pStatDecl :: Parser Token Stat
 pStatDecl =  pStat
          <|> StatDecl <$> pDeclSemi
 
+pExprDecl :: Parser Token Stat
+pExprDecl = pStat
+        <|> StatDecl <$> pDecl
+        <|> StatExpr <$> pExpr
+
 pStat :: Parser Token Stat
-pStat =  StatExpr <$> pExpr <*  sSemi
-     <|> StatIf     <$ keyword KeyIf     <*> parenthesised pExpr <*> pStat <*> optionalElse
-     <|> StatWhile  <$ keyword KeyWhile  <*> parenthesised pExpr <*> pStat
-     <|> StatReturn <$ keyword KeyReturn <*> pExpr               <*  sSemi
+pStat =  StatExpr   <$> pExpr <*  sSemi
+     <|> StatIf     <$  keyword KeyIf     <*> parenthesised pExpr <*> pStat <*> optionalElse
+     <|> StatWhile  <$  keyword KeyWhile  <*> parenthesised pExpr <*> pStat
+     <|> StatReturn <$  keyword KeyReturn <*> pExpr               <*  sSemi
      <|> pBlock
+     <|> pFor
      where optionalElse = option (keyword KeyElse *> pStat) (StatBlock [])
 
 pLiteral :: Parser Token Literal
@@ -286,9 +322,9 @@ pLiteral =  LitBool <$> sBoolLit
         <|> LitInt  <$> sIntLit
 
 pExprSimple :: Parser Token Expr
-pExprSimple = ExprLit  <$> pLiteral
-           <|> ExprVar  <$> sLowerId
-           <|> parenthesised pExpr
+pExprSimple = ExprLit <$> pLiteral
+          <|> ExprVar <$> sLowerId
+          <|> parenthesised pExpr
 
 pExprMultiplicative :: Parser Token Expr
 pExprMultiplicative = chainl pExprSimple (ExprOper <$> sMultiplicative)
@@ -334,3 +370,23 @@ bracketed     p = pack (punctuation SOpen) p (punctuation SClose) --[p]
 braced        p = pack (punctuation COpen) p (punctuation CClose) --{p}
 
 --- End Parser ----
+
+
+-- test = StatBlock [
+--   StatExpr (ExprDecl (Decl (NV TyInt) "i"))
+--  ,StatExpr (ExprOper OpAsg (ExprVar "i") (ExprLit (LitInt 0)))
+--  ,StatWhile
+--     (ExprOper OpLt (ExprVar "i") (ExprLit (LitInt 5)))
+--     (StatBlock [
+--       StatBlock [
+--                   StatExpr
+--                     (ExprOper OpAsg (ExprVar "i")
+--                     (ExprOper OpAdd (ExprVar "i")
+--                     (ExprLit (LitInt 1))))
+--                 ]
+--      ,StatExpr
+--           (ExprOper OpAsg (ExprVar "i")
+--           (ExprOper OpAdd (ExprVar "i")
+--           (ExprLit (LitInt 1))))
+--     ])
+--   ]

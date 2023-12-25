@@ -49,4 +49,10 @@ run s p x = fst . headOrError . parse (p <* eof) $ x
   headOrError (x : xs) = x
   headOrError []       = error $ "The " <> s <> " returned no full parses."
 
-testExpr = run "parser" (pExpr <* eof) . run "lexer" lexicalScanner $ "a = b = 1"
+testExpr =
+  -- run "parser" (pClass <* eof) .
+  -- run "lexer" lexicalScanner
+  -- $ "class Hello {\nvoid main() {\nint b;\nb = 1;\n}\n}"
+  run "parser" (pStat <* eof) .
+  run "lexer" lexicalScanner
+  $ "for (int i; i < 10;) {}"
