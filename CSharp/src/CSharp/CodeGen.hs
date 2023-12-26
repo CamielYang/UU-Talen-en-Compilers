@@ -46,9 +46,8 @@ insertDecl (Decl _ i) env
 fClass :: ClassName -> [M] -> C
 fClass c ms = trace ("fClass: " ++ show (length ms)) $ [Bsr "main", HALT] ++ snd mscs
   where
-    -- mscs = map (\m -> trace ("fClass map: " ++ show (m M.empty)) $ snd $ m M.empty) ms
-    mscs = foldr f (M.empty, []) ms
-    f m (env, cs) = trace ("env: " ++ show env') (env', cs' ++ cs)
+    mscs = foldl f (M.empty, []) ms
+    f (env, cs) m = trace ("env: " ++ show env') (env', cs ++ cs')
       where
         (env', cs') = m env
 
