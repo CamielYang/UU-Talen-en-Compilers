@@ -7,6 +7,7 @@ import           SSM
 
 import qualified Data.Map              as M
 import           Prelude               hiding (EQ, GT, LT)
+import Debug.Trace
 
 {-
   This file contains a starting point for the code generation.
@@ -14,10 +15,12 @@ import           Prelude               hiding (EQ, GT, LT)
 
 -- The types that we generate for each datatype: our type variables for the algebra.
 -- Change these definitions instead of the function signatures to get better type errors.
-type C = Code                   -- Class
-type M = Code                   -- Member
-type S = Code                   -- Statement
-type E = ValueOrAddress -> Code -- Expression
+type Env = M.Map Ident Int
+
+type C = Code                            -- Class
+type M = Env -> (Env, Code)              -- Member
+type S = Env -> (Env, Code)              -- Statement
+type E = Env -> (ValueOrAddress -> Code) -- Expression
 
 
 codeAlgebra :: CSharpAlgebra C M S E
@@ -35,52 +38,70 @@ codeAlgebra = CSharpAlgebra
   fExprVar
   fExprOp
 
+insertDecl :: Decl -> Env -> Env
+insertDecl (Decl _ i) env
+  |  M.member i env = env
+  | otherwise = trace ("insert: " ++ show i) $ M.insert i (M.size env + 42) env
+
 fClass :: ClassName -> [M] -> C
-fClass c ms = [Bsr "main", HALT] ++ concat ms
+fClass c ms = trace ("fClass: " ++ show (length ms)) $ [Bsr "main", HALT] ++ snd mscs
+  where
+    -- mscs = map (\m -> trace ("fClass map: " ++ show (m M.empty)) $ snd $ m M.empty) ms
+    mscs = foldr f (M.empty, []) ms
+    f m (env, cs) = trace ("env: " ++ show env') (env', cs' ++ cs)
+      where
+        (env', cs') = m env
 
 fMembDecl :: Decl -> M
-fMembDecl d = []
+fMembDecl d env = trace ("fMembDecl: " ++ show (env, d)) (insertDecl d env, [])
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth t x ps s = [LABEL x] ++ s ++ [RET]
+fMembMeth t x ps s env = trace ("fMembMeth: " ++ show env' ++ show (length ps)) (env', [LABEL x] ++ snd (s env') ++ [RET])
+  where
+    env' = foldr insertDecl env ps
 
 fStatDecl :: Decl -> S
-fStatDecl d = []
+fStatDecl d env = trace ("fStatDecl: " ++ show (insertDecl d env, d)) (insertDecl d env, [])
 
 fStatExpr :: E -> S
-fStatExpr e = e Value ++ [pop]
+fStatExpr e env = trace ("fStatExpr: " ++ show env) (env, e env Value ++ [pop])
 
 fStatIf :: E -> S -> S -> S
-fStatIf e s1 s2 = c ++ [BRF (n1 + 2)] ++ s1 ++ [BRA n2] ++ s2 where
-  c        = e Value
-  (n1, n2) = (codeSize s1, codeSize s2)
+fStatIf e s1 s2 env = trace ("fStatIf: " ++ show env) (env, c ++ [BRF (n1 + 2)] ++ snd (s1 env) ++ [BRA n2] ++ snd (s2 env)) where
+  c        = e env Value
+  (n1, n2) = (codeSize (snd $ s1 env), codeSize (snd $ s2 env))
 
 fStatWhile :: E -> S -> S
-fStatWhile e s1 = [BRA n] ++ s1 ++ c ++ [BRT (-(n + k + 2))] where
-  c = e Value
-  (n, k) = (codeSize s1, codeSize c)
+fStatWhile e s1 env = trace ("fStatWhile: " ++ show env) (env, [BRA n] ++ snd (s1 env) ++ c ++ [BRT (-(n + k + 2))]) where
+  c = e env Value
+  (n, k) = (codeSize (snd $ s1 env), codeSize c)
 
 fStatReturn :: E -> S
-fStatReturn e = e Value ++ [pop] ++ [RET]
+fStatReturn e env = trace ("fStatRturn: " ++ show env) (env, e env Value ++ [pop] ++ [RET])
 
 fStatBlock :: [S] -> S
-fStatBlock = concat
+-- fStatBlock s env = trace ("fStatBlock: " ++ show env) (env, concatMap (\x -> snd $ x env) s)
+fStatBlock s env = foldl f (env, []) s
+  where
+    f (env, cs) s = (env', cs ++ cs')
+      where
+        (env', cs') = s env
 
 fExprLit :: Literal -> E
-fExprLit l va  = [LDC n] where
+fExprLit l env va  = trace ("fExprLit: " ++ show env) [LDC n] where
   n = case l of
     LitInt n  -> n
     LitBool b -> bool2int b
 
 fExprVar :: Ident -> E
-fExprVar x va = case va of
+fExprVar x env va = trace ("fExprVar: " ++ show (env, x)) $ case va of
     Value   ->  [LDL  loc]
     Address ->  [LDLA loc]
-  where loc = 42
+  where loc = env M.! x
 
 fExprOp :: Operator -> E -> E -> E
-fExprOp OpAsg e1 e2 va = e2 Value ++ [LDS 0] ++ e1 Address ++ [STA 0]
-fExprOp op    e1 e2 va = e1 Value ++ e2 Value ++ [
+fExprOp OpAsg e1 e2 env va = trace ("fExprOp: " ++ show env) $ e2 env Value ++ [LDS 0] ++ e1 env Address ++ [STA 0]
+fExprOp op    e1 e2 env va = trace ("fExprOp: " ++ show env) $ e1 env Value ++ e2 env Value ++ [
    case op of
     { OpAdd -> ADD; OpSub -> SUB; OpMul -> MUL; OpDiv -> DIV;
     ; OpMod -> MOD

@@ -6,6 +6,14 @@ class Hello
     {
         int b;
         b = 1;
+
+        int i;
+        for (i = 1; i <= 10; i = i + 1)
+        {
+            b = b * 2;
+        }
+
+        return b;
     }
 
     int square(int x)
