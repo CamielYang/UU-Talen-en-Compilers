@@ -165,7 +165,7 @@ newLines :: Parser Char String
 newLines = greedy (satisfy isNewLine)
 
 lexComments :: Parser Char [String]
-lexComments = many (token "//" <* greedy (satisfy (not . isNewLine)) <* newLines)
+lexComments = many (token "//" <* greedy (satisfy (not . isNewLine)) <* lexWhiteSpace)
 
 greedyChoice :: [Parser s a] -> Parser s a
 greedyChoice = foldr (<<|>) empty
@@ -270,20 +270,6 @@ pMember =  MemberD <$> pDeclSemi
 
 pBlock :: Parser Token Stat
 pBlock = StatBlock <$> braced (many pStatDecl)
-
--- pFor :: Parser Token Stat
--- pFor = StatFor
---    <$  keyword KeyFor
---    <*  punctuation POpen
---    <*> option (listOf pExprDelc (punctuation Comma)) []
---    <*  sSemi
---    <*> pExpr
---    <*  sSemi
---    <*> option (listOf pExprDelc (punctuation Comma)) []
---    <*  punctuation PClose
---    <*> pStat
-
-
 
 pFor :: Parser Token Stat
 pFor = (\e1 e e2 s -> StatBlock $

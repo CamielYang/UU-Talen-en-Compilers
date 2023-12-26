@@ -47,9 +47,8 @@ fClass :: ClassName -> [M] -> C
 fClass c ms = trace ("fClass: " ++ show (length ms)) $ [Bsr "main", HALT] ++ snd mscs
   where
     mscs = foldl f (M.empty, []) ms
-    f (env, cs) m = trace ("env: " ++ show env') (env', cs ++ cs')
-      where
-        (env', cs') = m env
+    f (env, cs) m = let (env', cs') = m env in
+      trace ("env: " ++ show env') (env', cs ++ cs')
 
 fMembDecl :: Decl -> M
 fMembDecl d env = trace ("fMembDecl: " ++ show (env, d)) (insertDecl d env, [])
@@ -79,18 +78,19 @@ fStatReturn :: E -> S
 fStatReturn e env = trace ("fStatRturn: " ++ show env) (env, e env Value ++ [pop] ++ [RET])
 
 fStatBlock :: [S] -> S
--- fStatBlock s env = trace ("fStatBlock: " ++ show env) (env, concatMap (\x -> snd $ x env) s)
-fStatBlock s env = foldl f (env, []) s
+fStatBlock s env = trace ("fStatBlock: " ++ show env) foldl f (env, []) s
   where
-    f (env, cs) s = (env', cs ++ cs')
-      where
-        (env', cs') = s env
+    f (env, cs) s = let (env', cs') = s env in
+      (env', cs ++ cs')
 
 fExprLit :: Literal -> E
 fExprLit l env va  = trace ("fExprLit: " ++ show env) [LDC n] where
   n = case l of
     LitInt n  -> n
     LitBool b -> bool2int b
+
+codeBool :: Bool -> Env -> Code
+codeBool bool env = fExprLit (LitBool bool) env Value
 
 fExprVar :: Ident -> E
 fExprVar x env va = trace ("fExprVar: " ++ show (env, x)) $ case va of
@@ -100,11 +100,21 @@ fExprVar x env va = trace ("fExprVar: " ++ show (env, x)) $ case va of
 
 fExprOp :: Operator -> E -> E -> E
 fExprOp OpAsg e1 e2 env va = trace ("fExprOp: " ++ show env) $ e2 env Value ++ [LDS 0] ++ e1 env Address ++ [STA 0]
+fExprOp OpOr e1 e2 env _ = trace ("fExprOp: " ++ show env)
+  snd $ fStatIf
+          e1
+          (, codeBool True env)
+          (, e2 env Value) env
+fExprOp OpAnd e1 e2 env _ = trace ("fExprOp: " ++ show env)
+  snd $ fStatIf
+          e1
+          (, e2 env Value)
+          (, codeBool False env) env
 fExprOp op    e1 e2 env va = trace ("fExprOp: " ++ show env) $ e1 env Value ++ e2 env Value ++ [
    case op of
     { OpAdd -> ADD; OpSub -> SUB; OpMul -> MUL; OpDiv -> DIV;
     ; OpMod -> MOD
-    ; OpAnd -> AND; OpOr -> OR; OpXor -> XOR;
+    ; OpXor -> XOR;
     ; OpLeq -> LE; OpLt -> LT;
     ; OpGeq -> GT; OpGt -> GT;
     ; OpEq  -> EQ; OpNeq -> NE;}

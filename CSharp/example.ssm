@@ -6,31 +6,15 @@ main:
 	LDLA 43
 	STA 0
 	AJS -1
-	LDC 1
-	LDS 0
-	LDLA 44
-	STA 0
-	AJS -1
-	BRA 26
-	LDL 43
+	LDC 0
+	BRF 10
+	LDC 15
 	LDC 2
 	MUL
-	LDS 0
-	LDLA 43
-	STA 0
-	AJS -1
-	LDL 44
-	LDC 1
-	ADD
-	LDS 0
-	LDLA 44
-	STA 0
-	AJS -1
-	LDL 44
-	LDC 10
-	LE
-	BRT -33
-	LDL 43
+	LDC 2
+	GT
+	BRA 2
+	LDC 0
 	AJS -1
 	RET
 	RET
