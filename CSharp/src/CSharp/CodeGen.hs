@@ -34,14 +34,17 @@ codeAlgebra = CSharpAlgebra
   fStatWhile
   fStatReturn
   fStatBlock
+  fStatCall
   fExprLit
   fExprVar
   fExprOp
 
 insertDecl :: Decl -> Env -> Env
-insertDecl (Decl _ i) env
-  |  M.member i env = env
-  | otherwise = trace ("insert: " ++ show i) $ M.insert i (M.size env + 42) env
+insertDecl (Decl _ i) env = trace ("insert: " ++ show i) $ M.insert i newIndex env
+  where
+    newIndex
+      | M.size env == 0 = 42
+      | otherwise = maximum (M.elems env) + 1
 
 fClass :: ClassName -> [M] -> C
 fClass c ms = trace ("fClass: " ++ show (length ms)) $ [Bsr "main", HALT] ++ snd mscs
@@ -54,8 +57,11 @@ fMembDecl :: Decl -> M
 fMembDecl d env = trace ("fMembDecl: " ++ show (env, d)) (insertDecl d env, [])
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth t x ps s env = trace ("fMembMeth: " ++ show env' ++ show (length ps)) (env', [LABEL x] ++ snd (s env') ++ [RET])
+fMembMeth t x ps s env =
+  trace ("fMembMeth: " ++ x ++ " " ++ show env' ++ show (length ps))
+  (M.union env' (fst statement), [LABEL x] ++ snd statement ++ [RET])
   where
+    statement = s env'
     env' = foldr insertDecl env ps
 
 fStatDecl :: Decl -> S
@@ -82,6 +88,11 @@ fStatBlock s env = trace ("fStatBlock: " ++ show env) foldl f (env, []) s
   where
     f (env, cs) s = let (env', cs') = s env in
       (env', cs ++ cs')
+
+fStatCall :: Ident -> [E] -> S
+fStatCall i es env =
+  trace ("fStatCall: " ++ show (concatMap (\e -> e env Value) es ++ [Bsr i]))
+  (env, concatMap (\e -> e env Value) es ++ [Bsr i])
 
 fExprLit :: Literal -> E
 fExprLit l env va  = trace ("fExprLit: " ++ show env) [LDC n] where

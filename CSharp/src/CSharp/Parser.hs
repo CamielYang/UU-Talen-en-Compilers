@@ -285,6 +285,9 @@ pFor = (\e1 e e2 s -> StatBlock $
    <*  punctuation PClose
    <*> pStat
 
+pCall :: Parser Token Stat
+pCall = StatCall <$> sLowerId <*> parenthesised (option (listOf pExpr (punctuation Comma)) []) <* sSemi
+
 pStatDecl :: Parser Token Stat
 pStatDecl =  pStat
          <|> StatDecl <$> pDeclSemi
@@ -301,6 +304,7 @@ pStat =  StatExpr   <$> pExpr <*  sSemi
      <|> StatReturn <$  keyword KeyReturn <*> pExpr               <*  sSemi
      <|> pBlock
      <|> pFor
+     <|> pCall
      where optionalElse = option (keyword KeyElse *> pStat) (StatBlock [])
 
 pLiteral :: Parser Token Literal

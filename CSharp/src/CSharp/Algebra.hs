@@ -21,6 +21,7 @@ data CSharpAlgebra c m s e
     , statWhile  :: e -> s -> s
     , statReturn :: e -> s
     , statBlock  :: [s] -> s
+    , statCall   :: Ident -> [e] -> s
 
     , exprLit    :: Literal -> e
     , exprVar    :: Ident -> e
@@ -43,6 +44,7 @@ foldCSharp CSharpAlgebra{..} = fClas where
   fStat (StatWhile  e s1)     = statWhile (fExpr e) (fStat s1)
   fStat (StatReturn e)        = statReturn (fExpr e)
   fStat (StatBlock  ss)       = statBlock (map fStat ss)
+  fStat (StatCall   i e)      = statCall i (map fExpr e)
 
   fExpr (ExprLit    lit)      = exprLit lit
   fExpr (ExprVar    var)      = exprVar var

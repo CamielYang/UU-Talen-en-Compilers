@@ -7,77 +7,93 @@ main:
 	STA 0
 	AJS -1
 	LDC 0
-	BRF 10
-	LDC 15
-	LDC 2
-	MUL
-	LDC 2
-	GT
-	BRA 2
-	LDC 0
+	LDS 0
+	LDLA 44
+	STA 0
 	AJS -1
-	RET
-	RET
-square:
+	BRA 26
 	LDL 43
-	LDL 43
-	MUL
+	LDC 1
+	ADD
+	LDS 0
+	LDLA 43
+	STA 0
+	AJS -1
+	LDL 44
+	LDC 1
+	ADD
 	LDS 0
 	LDLA 44
 	STA 0
 	AJS -1
 	LDL 44
+	LDC 10
+	LT
+	BRT -33
+	LDL 43
+	AJS -1
+	RET
+	RET
+square:
+	LDL 45
+	LDL 45
+	MUL
+	LDS 0
+	LDLA 46
+	STA 0
+	AJS -1
+	LDL 46
 	AJS -1
 	RET
 	RET
 abs:
-	LDL 43
+	LDL 47
 	LDC 0
 	LT
 	BRF 15
 	LDC 0
-	LDL 43
+	LDL 47
 	SUB
 	LDS 0
-	LDLA 43
+	LDLA 47
 	STA 0
 	AJS -1
 	BRA 0
-	LDL 43
+	LDL 47
 	AJS -1
 	RET
 	RET
 fac:
 	LDC 1
 	LDS 0
-	LDLA 45
+	LDLA 50
 	STA 0
 	AJS -1
 	LDC 1
 	LDS 0
-	LDLA 44
+	LDLA 49
 	STA 0
 	AJS -1
 	BRA 26
-	LDL 44
-	LDL 45
+	LDL 49
+	LDL 50
 	MUL
 	LDS 0
-	LDLA 44
+	LDLA 49
 	STA 0
 	AJS -1
-	LDL 45
+	LDL 50
 	LDC 1
 	ADD
 	LDS 0
-	LDLA 45
+	LDLA 50
 	STA 0
 	AJS -1
-	LDL 45
-	LDL 43
+	LDL 50
+	LDL 48
 	LE
 	BRT -33
-	LDL 44
+	LDL 49
 	AJS -1
 	RET
 	RET

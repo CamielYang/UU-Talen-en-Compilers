@@ -6,7 +6,16 @@ class Hello
     {
         int b;
         b = 1;
-        return false && (15 * 2 > 2);
+        int i;
+
+        for (i = 0; i < 10; i = i + 1)
+        {
+            b = b + 1;
+        }
+
+        return b;
+
+        // return false && (15 * 2 > 2);
     }
 
     int square(int x)

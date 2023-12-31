@@ -23,6 +23,7 @@ data Stat     -- Statements
   | StatWhile  Expr Stat
   | StatReturn Expr
   | StatBlock  [Stat]
+  | StatCall   Ident [Expr]
   deriving (Eq, Ord, Show)
 
 data Literal = LitInt Int | LitBool Bool
