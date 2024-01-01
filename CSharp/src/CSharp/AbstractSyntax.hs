@@ -23,7 +23,6 @@ data Stat     -- Statements
   | StatWhile  Expr Stat
   | StatReturn Expr
   | StatBlock  [Stat]
-  | StatCall   Ident [Expr]
   deriving (Eq, Ord, Show)
 
 data Literal = LitInt Int | LitBool Bool
@@ -33,6 +32,7 @@ data Expr   -- Expressions
   = ExprLit   Literal
   | ExprVar   Ident
   | ExprOper  Operator Expr Expr
+  | ExprCall  Ident [Expr]
   deriving (Eq, Ord, Show)
 
 data Operator -- Binary operators

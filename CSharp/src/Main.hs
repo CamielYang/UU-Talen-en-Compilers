@@ -36,6 +36,8 @@ processFile infile = do
   let outfile = addExtension (dropExtension infile) "ssm"
   xs <- readFile infile
   let program = run "parser" (pClass <* eof) . run "lexer" lexicalScanner $ xs
+  -- let program = run "lexer" lexicalScanner $ xs
+  -- putStrLn (show program)
   case foldCSharp analysisAlgebra program of
     False -> error "analysis failed"
     True -> do

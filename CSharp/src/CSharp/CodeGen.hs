@@ -34,10 +34,10 @@ codeAlgebra = CSharpAlgebra
   fStatWhile
   fStatReturn
   fStatBlock
-  fStatCall
   fExprLit
   fExprVar
   fExprOp
+  fExprCall
 
 insertDecl :: Decl -> Env -> Env
 insertDecl (Decl _ i) env = trace ("insert: " ++ show i) $ M.insert i newIndex env
@@ -46,23 +46,31 @@ insertDecl (Decl _ i) env = trace ("insert: " ++ show i) $ M.insert i newIndex e
       | M.size env == 0 = 42
       | otherwise = maximum (M.elems env) + 1
 
+getDecl :: Ident -> Env -> Int
+getDecl i env
+  | M.member i env = env M.! i
+  | otherwise = error ("Variable: " ++ show i ++ " not in scope ")
+
 fClass :: ClassName -> [M] -> C
 fClass c ms = trace ("fClass: " ++ show (length ms)) $ [Bsr "main", HALT] ++ snd mscs
   where
     mscs = foldl f (M.empty, []) ms
     f (env, cs) m = let (env', cs') = m env in
-      trace ("env: " ++ show env') (env', cs ++ cs')
+      trace ("env: " ++ show env') (env', cs' ++ cs)
 
 fMembDecl :: Decl -> M
 fMembDecl d env = trace ("fMembDecl: " ++ show (env, d)) (insertDecl d env, [])
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
 fMembMeth t x ps s env =
-  trace ("fMembMeth: " ++ x ++ " " ++ show env' ++ show (length ps))
-  (M.union env' (fst statement), [LABEL x] ++ snd statement ++ [RET])
+  trace ("fMembMeth: " ++ x ++ " " ++ show denv ++ show (length ps))
+  (M.union denv senv, [LABEL x] ++ stackParams ++ statements ++ [RET])
   where
-    statement = s env'
-    env' = foldr insertDecl env ps
+    pl = length ps
+    denv = foldr insertDecl env ps
+    (senv, statements) = s denv
+    stackParams = snd (foldl f (negate pl, []) ps)
+    f (p, code) (Decl _ i) = (p + 1, code ++ [LDS p, LDLA (getDecl i denv), STA 0])
 
 fStatDecl :: Decl -> S
 fStatDecl d env = trace ("fStatDecl: " ++ show (insertDecl d env, d)) (insertDecl d env, [])
@@ -89,11 +97,6 @@ fStatBlock s env = trace ("fStatBlock: " ++ show env) foldl f (env, []) s
     f (env, cs) s = let (env', cs') = s env in
       (env', cs ++ cs')
 
-fStatCall :: Ident -> [E] -> S
-fStatCall i es env =
-  trace ("fStatCall: " ++ show (concatMap (\e -> e env Value) es ++ [Bsr i]))
-  (env, concatMap (\e -> e env Value) es ++ [Bsr i])
-
 fExprLit :: Literal -> E
 fExprLit l env va  = trace ("fExprLit: " ++ show env) [LDC n] where
   n = case l of
@@ -107,10 +110,12 @@ fExprVar :: Ident -> E
 fExprVar x env va = trace ("fExprVar: " ++ show (env, x)) $ case va of
     Value   ->  [LDL  loc]
     Address ->  [LDLA loc]
-  where loc = env M.! x
+  where loc = getDecl x env
 
 fExprOp :: Operator -> E -> E -> E
-fExprOp OpAsg e1 e2 env va = trace ("fExprOp: " ++ show env) $ e2 env Value ++ [LDS 0] ++ e1 env Address ++ [STA 0]
+fExprOp OpAsg e1 e2 env va =
+  trace ("fExprOp: " ++ show env) $
+  e2 env Value ++ [LDS 0] ++ e1 env Address ++ [STA 0]
 fExprOp OpOr e1 e2 env _ = trace ("fExprOp: " ++ show env)
   snd $ fStatIf
           e1
@@ -130,6 +135,14 @@ fExprOp op    e1 e2 env va = trace ("fExprOp: " ++ show env) $ e1 env Value ++ e
     ; OpGeq -> GT; OpGt -> GT;
     ; OpEq  -> EQ; OpNeq -> NE;}
   ]
+
+fExprCall :: Ident -> [E] -> E
+fExprCall "print" es env va =
+  trace ("fExprCall: " ++ show env)
+  concatMap (\e -> e env Value ++ [TRAP 0]) es ++ [AJS 1]
+fExprCall i es env va =
+  trace ("fExprCall: " ++ show env)
+  concatMap (\e -> e env Value) es ++ [Bsr i, pop, LDS 3]
 
 -- | Whether we are computing the value of a variable, or a pointer to it
 data ValueOrAddress = Value | Address
