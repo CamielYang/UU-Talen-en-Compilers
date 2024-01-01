@@ -1,30 +1,76 @@
 	Bsr main
 	HALT
-main:
-	LDC 0
-	LDS 0
-	LDLA 42
+print3:
+	LDS -3
+	LDLA 47
 	STA 0
-	AJS -1
-	BRA 21
-	LDL 42
+	LDS -2
+	LDLA 46
+	STA 0
+	LDS -1
+	LDLA 45
+	STA 0
+	LDL 47
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 42
-	LDC 1
-	ADD
-	LDS 0
-	LDLA 42
-	STA 0
+	LDL 46
+	TRAP 0
+	AJS 1
 	AJS -1
-	LDL 42
-	LDC 5
-	LT
-	BRT -28
-	LDC 0
-	LDS 0
+	LDL 45
+	TRAP 0
+	AJS 1
+	AJS -1
+	RET
+printAdd:
+	LDS -2
+	LDLA 44
+	STA 0
+	LDS -1
 	LDLA 43
 	STA 0
+	LDL 44
+	LDL 43
+	ADD
+	TRAP 0
+	AJS 1
+	AJS -1
+	RET
+printSquare:
+	LDS -1
+	LDLA 42
+	STA 0
+	LDL 42
+	LDL 42
+	MUL
+	TRAP 0
+	AJS 1
+	AJS -1
+	RET
+main:
+	LDC 3
+	Bsr printSquare
+	AJS -1
+	LDS 3
+	AJS -1
+	LDC 4
+	LDC 5
+	Bsr printAdd
+	AJS -2
+	LDS 3
+	AJS -1
+	LDC 1
+	LDC 2
+	LDC 3
+	Bsr print3
+	AJS -3
+	LDS 3
+	AJS -1
+	LDC 1
+	TRAP 0
+	AJS 1
+	TRAP 0
+	AJS 1
 	AJS -1
 	RET

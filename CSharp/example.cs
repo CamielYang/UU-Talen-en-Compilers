@@ -2,39 +2,25 @@ class Hello
 {
     void main()
     {
-        for (int i, i = 0; i < 5; i = i + 1)
-        {
-            print(i);
-        }
-
-        int k;
-        k = true;
+        printSquare(3);
+        printAdd(4, 5);
+        print3(1, 2, 3);
     }
 
-    // int square(int x)
-    // {
-    //     int y;
-    //     y = x * x;
-    //     return y;
-    // }
+    void printSquare(int x)
+    {
+        print(x * x);
+    }
 
-    // int abs(int x)
-    // {
+    void printAdd(int x, int y)
+    {
+        print(x + y);
+    }
 
-    //     if (x < 0)
-    //         x = 0 - x;
-    //     return x;
-    // }
-
-    // int fac(int x)
-    // {
-    //     int r; int t;
-    //     t = 1; r = 1;
-    //     while (t <= x)
-    //     {
-    //         r = r * t;
-    //         t = t + 1;
-    //     }
-    //     return r;
-    // }
+    void print3(int a, int b, int c)
+    {
+        print(a);
+        print(b);
+        print(c);
+    }
 }

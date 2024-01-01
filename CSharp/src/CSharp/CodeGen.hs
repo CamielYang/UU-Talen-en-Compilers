@@ -140,7 +140,8 @@ fExprCall "print" es env va =
   concatMap (\e -> e env Value ++ [TRAP 0]) es ++ [AJS 1]
 fExprCall i es env va =
   trace ("fExprCall: " ++ show env)
-  concatMap (\e -> e env Value) es ++ [Bsr i, pop, LDS 3]
+  concatMap (\e -> e env Value) es ++ [Bsr i, AJS (negate $ length es), LDS 3]
+
 
 -- | Whether we are computing the value of a variable, or a pointer to it
 data ValueOrAddress = Value | Address
