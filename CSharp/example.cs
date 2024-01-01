@@ -1,12 +1,11 @@
 class Hello
 {
-    int g;
-
     void main()
     {
-        bool i;
-        i = 1;
-        return k;
+        for (int i, i = 0; i < 5; i = i + 1)
+        {
+            print(i);
+        }
     }
 
     // int square(int x)

@@ -47,9 +47,7 @@ insertDecl (Decl _ i) env = trace ("insert: " ++ show i) $ M.insert i newIndex e
       | otherwise = maximum (M.elems env) + 1
 
 getDecl :: Ident -> Env -> Int
-getDecl i env
-  | M.member i env = env M.! i
-  | otherwise = error ("Variable: " ++ show i ++ " not in scope ")
+getDecl i env = env M.! i
 
 fClass :: ClassName -> [M] -> C
 fClass c ms = trace ("fClass: " ++ show (length ms)) $ [Bsr "main", HALT] ++ snd mscs
