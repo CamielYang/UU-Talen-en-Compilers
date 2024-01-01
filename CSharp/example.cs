@@ -6,6 +6,9 @@ class Hello
         {
             print(i);
         }
+
+        int k;
+        k = true;
     }
 
     // int square(int x)

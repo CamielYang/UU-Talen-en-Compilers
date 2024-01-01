@@ -100,7 +100,7 @@ fExprOp OpAsg address value env = trace ("fExprOp: " ++ show (eRetType $ address
   where
     return
       | getDecl (eIdent $ address env) env == eRetType (value env) = baseERet
-      | otherwise = error ("TypeError: Variable " ++ eIdent (address env) ++ " expected type " ++ show (eRetType $ address env) ++ " does not match " ++ show (eRetType $ value env))
+      | otherwise = error ("TypeError: Variable " ++ eIdent (address env) ++ " expected (" ++ show (eRetType $ address env) ++ ") does not match (" ++ show (eRetType $ value env) ++ ")")
 fExprOp op _ _ env =
   trace ("fExprOp: " ++ show env) $
   baseERet {

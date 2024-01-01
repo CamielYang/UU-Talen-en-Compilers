@@ -22,4 +22,9 @@ main:
 	LDC 5
 	LT
 	BRT -28
+	LDC 0
+	LDS 0
+	LDLA 43
+	STA 0
+	AJS -1
 	RET
