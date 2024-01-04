@@ -264,6 +264,7 @@ pClass = Class <$ keyword KeyClass <*> sUpperId <*> braced (many pMember)
 
 pMember :: Parser Token Member
 pMember =  MemberD <$> pDeclSemi
+       <|> MemberE <$> pExpr <* sSemi
        <|> MemberM <$> pRetType <*> sLowerId <*> methArgList <*> pBlock
     where
   methArgList = parenthesised (option (listOf pDecl (punctuation Comma)) [])

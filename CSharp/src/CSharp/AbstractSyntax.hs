@@ -13,6 +13,7 @@ data Class    -- Classes (top-level C# programs)
 
 data Member   -- Class members
   = MemberD Decl                      -- global variable declaration
+  | MemberE Expr                      -- global expression
   | MemberM RetType Ident [Decl] Stat -- function (aka "method") defintions
   deriving (Eq, Ord, Show)
 

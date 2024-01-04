@@ -13,6 +13,7 @@ data CSharpAlgebra c m s e
     { clas       :: ClassName -> [m] -> c
 
     , memberD    :: Decl -> m
+    , memberE    :: e -> m
     , memberM    :: RetType -> String -> [Decl] -> s -> m
 
     , statDecl   :: Decl -> s
@@ -36,6 +37,7 @@ foldCSharp CSharpAlgebra{..} = fClas where
   fClas (Class      t ms)     = trace (show ms) clas t (map fMemb ms)
 
   fMemb (MemberD    d)        = memberD d
+  fMemb (MemberE    e)        = memberE (fExpr e)
   fMemb (MemberM    t m ps s) = memberM t m ps (fStat s)
 
   fStat (StatDecl   d)        = statDecl d
@@ -49,10 +51,3 @@ foldCSharp CSharpAlgebra{..} = fClas where
   fExpr (ExprVar    var)      = exprVar var
   fExpr (ExprOper   op e1 e2) = exprOper op (fExpr e1) (fExpr e2)
   fExpr (ExprCall   m es)     = exprCall m (map fExpr es)
-
-  filterMeth = filter (\case
-    MemberM {} -> True
-    _                -> False)
-  filterDecl = filter (\case
-    MemberD _ -> True
-    _         -> False)

@@ -16,17 +16,20 @@ import Debug.Trace
 -- The types that we generate for each datatype: our type variables for the algebra.
 -- Change these definitions instead of the function signatures to get better type errors.
 type Env = M.Map Ident Int
+data GlobalOrLocal = Global | Local
+  deriving Eq
 
-type C = Code                            -- Class
-type M = Env -> (Env, Code)              -- Member
-type S = Env -> (Env, Code)              -- Statement
-type E = Env -> (ValueOrAddress -> Code) -- Expression
+type C = Code                              -- Class
+type M = Env -> (GlobalOrLocal, Env, Code) -- Member
+type S = Env -> (Env, Code)                -- Statement
+type E = Env -> (ValueOrAddress -> Code)   -- Expression
 
 
 codeAlgebra :: CSharpAlgebra C M S E
 codeAlgebra = CSharpAlgebra
   fClass
   fMembDecl
+  fMembExpr
   fMembMeth
   fStatDecl
   fStatExpr
@@ -50,19 +53,29 @@ getDecl :: Ident -> Env -> Int
 getDecl i env = env M.! i
 
 fClass :: ClassName -> [M] -> C
-fClass c ms = trace ("fClass: " ++ show (length ms)) $ [Bsr "main", HALT] ++ snd mscs
+fClass c ms =
+  trace ("fClass: " ++ show (length ms))
+  gcs ++ [Bsr "main", HALT] ++ lcs
   where
-    mscs = foldl f (M.empty, []) ms
-    f (env, cs) m = let (env', cs') = m env in
-      trace ("env: " ++ show env') (env', cs' ++ cs)
+    (_, (gcs, lcs)) = foldl f (M.empty, ([], [])) ms
+    f (env, (gcs, lcs)) m =
+      let (gol, env', cs) = m env in
+      trace ("env: " ++ show env')
+      (M.union env env',
+       if gol == Global
+        then (gcs ++ cs, lcs)
+        else (gcs, lcs ++ cs ))
 
 fMembDecl :: Decl -> M
-fMembDecl d env = trace ("fMembDecl: " ++ show (env, d)) (insertDecl d env, [])
+fMembDecl d env = trace ("fMembDecl: " ++ show (env, d)) (Global, insertDecl d env, [])
+
+fMembExpr :: E -> M
+fMembExpr e env = trace ("fMembExpr: " ++ show env) (Global, env, e env Value)
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
 fMembMeth t x ps s env =
   trace ("fMembMeth: " ++ x ++ " " ++ show denv ++ show (length ps))
-  (M.union denv senv, [LABEL x] ++ stackParams ++ statements ++ [RET])
+  (Local, M.union denv senv, [LABEL x] ++ stackParams ++ statements ++ [RET])
   where
     pl = length ps
     denv = foldr insertDecl env ps
