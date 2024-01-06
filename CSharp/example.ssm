@@ -49,6 +49,11 @@ printSquare:
 	TRAP 0
 	AJS 1
 	AJS -1
+	LDL 45
+	LDL 45
+	MUL
+	AJS -1
+	RET
 	RET
 printAdd:
 	LDS -2
@@ -63,6 +68,11 @@ printAdd:
 	TRAP 0
 	AJS 1
 	AJS -1
+	LDL 47
+	LDL 46
+	ADD
+	AJS -1
+	RET
 	RET
 printFor:
 	LDS -1
@@ -116,6 +126,14 @@ printWhile:
 	LT
 	BRT -28
 	RET
+rInt:
+	LDS -1
+	LDLA 49
+	STA 0
+	LDL 49
+	AJS -1
+	RET
+	RET
 main:
 	LDL 42
 	LDC 10
@@ -124,6 +142,9 @@ main:
 	AJS 1
 	AJS -1
 	LDC 3
+	Bsr rInt
+	AJS -1
+	LDS 3
 	Bsr printSquare
 	AJS -1
 	LDS 3
@@ -132,14 +153,14 @@ main:
 	LDC 5
 	Bsr printAdd
 	AJS -2
-	LDS 3
+	LDS 4
 	AJS -1
 	LDC 1
 	LDC 2
 	LDC 3
 	Bsr print3
 	AJS -3
-	LDS 3
+	LDS 5
 	AJS -1
 	LDC 10
 	Bsr printFor
@@ -150,6 +171,40 @@ main:
 	Bsr printWhile
 	AJS -1
 	LDS 3
+	AJS -1
+	LDC 3
+	Bsr rInt
+	AJS -1
+	LDS 3
+	Bsr printSquare
+	AJS -1
+	LDS 3
+	LDS 0
+	LDLA 49
+	STA 0
+	AJS -1
+	LDL 49
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDC 40
+	Bsr rInt
+	AJS -1
+	LDS 3
+	LDC 5
+	Bsr rInt
+	AJS -1
+	LDS 3
+	Bsr printAdd
+	AJS -2
+	LDS 4
+	LDS 0
+	LDLA 49
+	STA 0
+	AJS -1
+	LDL 49
+	TRAP 0
+	AJS 1
 	AJS -1
 	LDL 42
 	LDC 10

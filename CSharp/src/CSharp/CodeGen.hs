@@ -80,8 +80,8 @@ fMembMeth t x ps s env =
     pl = length ps
     denv = foldr insertDecl env ps
     (senv, statements) = s denv
-    stackParams = snd (foldl f (negate pl, []) ps)
     f (p, code) (Decl _ i) = (p + 1, code ++ [LDS p, LDLA (getDecl i denv), STA 0])
+    stackParams = snd (foldl f (negate pl, []) ps)
 
 fStatDecl :: Decl -> S
 fStatDecl d env = trace ("fStatDecl: " ++ show (insertDecl d env, d)) (insertDecl d env, [])
@@ -100,7 +100,7 @@ fStatWhile e s1 env = trace ("fStatWhile: " ++ show env) (env, [BRA n] ++ snd (s
   (n, k) = (codeSize (snd $ s1 env), codeSize c)
 
 fStatReturn :: E -> S
-fStatReturn e env = trace ("fStatRturn: " ++ show env) (env, e env Value ++ [pop] ++ [RET])
+fStatReturn e env = trace ("fStatReturn: " ++ show env) (env, e env Value ++ [pop] ++ [RET])
 
 fStatBlock :: [S] -> S
 fStatBlock s env = trace ("fStatBlock: " ++ show env) foldl f (env, []) s
@@ -153,7 +153,7 @@ fExprCall "print" es env va =
   concatMap (\e -> e env Value ++ [TRAP 0]) es ++ [AJS 1]
 fExprCall i es env va =
   trace ("fExprCall: " ++ show env)
-  concatMap (\e -> e env Value) es ++ [Bsr i, AJS (negate $ length es), LDS 3]
+  concatMap (\e -> e env Value) es ++ [Bsr i, AJS (negate $ length es), LDS (2 + length es)]
 
 
 -- | Whether we are computing the value of a variable, or a pointer to it

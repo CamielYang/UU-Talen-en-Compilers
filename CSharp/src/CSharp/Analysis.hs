@@ -10,7 +10,12 @@ import           Prelude               hiding (EQ, GT, LT)
 import Debug.Trace
 
 type DEnv = M.Map Ident RetType
-type MEnv = M.Map Ident [Decl]
+type MEnv = M.Map Ident Method
+
+data Method = Method {
+  mRetType :: RetType,
+  mParams  :: [Decl]
+} deriving (Show)
 
 data ERet = ERet {
   eIdent   :: Ident,
@@ -27,9 +32,9 @@ baseERet = ERet {
   eRetType = TyVoid
 }
 
-type C = Bool            -- Class
-type M = Env -> Env    -- Member
-type S = Env -> Env    -- Statement
+type C = Bool           -- Class
+type M = Env -> Env     -- Member
+type S = Env -> Env     -- Statement
 type E = Env -> ERet    -- Expression
 
 analysisAlgebra :: CSharpAlgebra C M S E
@@ -56,18 +61,17 @@ emptyEnv = Env {
 }
 
 insertDecl :: Decl -> Env -> Env
-insertDecl (Decl rt i) env = trace (show env) $
-  env { denv = M.insert i rt (denv env) }
+insertDecl (Decl rt i) env = env { denv = M.insert i rt (denv env) }
 
 getDecl :: Ident -> Env -> RetType
 getDecl i Env{..}
   | M.member i denv = denv M.! i
   | otherwise = error ("TypeError: " ++ show i ++ " is not defined")
 
-insertMeth :: [Decl] -> Ident -> Env -> Env
-insertMeth ds i env = env { menv = M.insert i ds (menv env) }
+insertMeth :: RetType -> [Decl] -> Ident -> Env -> Env
+insertMeth rt ds i env = env { menv = M.insert i (Method rt ds) (menv env) }
 
-getMeth :: Ident -> Env -> [Decl]
+getMeth :: Ident -> Env -> Method
 getMeth i Env{..}
   | M.member i menv = menv M.! i
   | otherwise = error ("TypeError: " ++ show i ++ " is not defined")
@@ -85,11 +89,7 @@ fMembExpr :: E -> M
 fMembExpr e env = e env `seq` env
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth _ i ps s env = senv
-  where
-    env' = insertMeth ps i env
-    decEnv = foldr insertDecl env' ps
-    senv = s decEnv
+fMembMeth rt i ps s env = s (foldr insertDecl (insertMeth rt ps i env) ps)
 
 fStatDecl :: Decl -> S
 fStatDecl = insertDecl
@@ -98,7 +98,7 @@ fStatExpr :: E -> S
 fStatExpr e env = e env `seq` env
 
 fStatIf :: E -> S -> S -> S
-fStatIf e s1 s2 env = trace "1" e env `seq` s1 $ s2 env `seq` env
+fStatIf e s1 s2 env = e env `seq` s1 $ s2 env `seq` env
 
 fStatWhile :: E -> S -> S
 fStatWhile e s env = e env `seq` s env
@@ -126,14 +126,11 @@ variableError :: Ident -> RetType -> RetType -> Env -> a
 variableError v r1 r2 env = error ("TypeError: \"" ++ v ++ "\" expected (" ++ show r1 ++ ") but got (" ++ show r2 ++ ")")
 
 fExprOp :: Operator -> E -> E -> E
-fExprOp OpAsg address value env = trace ("fExprOp: " ++ show (eRetType $ address env) ++ " " ++ show (eRetType $ value env)) return
-  where
-    return
-      | getDecl (eIdent $ address env) env == eRetType (value env) = baseERet
-      | otherwise = variableError (eIdent $ address env) (getDecl (eIdent $ address env) env) (eRetType (value env)) env
-fExprOp op _ _ env =
-  trace ("fExprOp: " ++ show env) $
-  baseERet {
+fExprOp OpAsg address value env
+  | getDecl (eIdent $ address env) env == eRetType (value env) = baseERet
+  | otherwise = variableError (eIdent $ address env) (getDecl (eIdent $ address env) env) (eRetType (value env)) env
+fExprOp op e1 e2 env =
+  e1 env `seq` e2 env `seq` baseERet {
     eRetType = case op of
       {
         OpAdd -> NV TyInt; OpSub -> NV TyInt; OpMul -> NV TyInt; OpDiv -> NV TyInt;
@@ -146,13 +143,19 @@ fExprOp op _ _ env =
   }
 
 fExprCall :: Ident -> [E] -> E
-fExprCall i es env = trace ("fExprCall: " ++ show i) result
+fExprCall "print" es env
+  | all (\e -> eRetType (e env) /= TyVoid) es = foldr f baseERet es
+  | otherwise = error "TypeError: print cannot have void arguments"
   where
-    result
-      | i == "print" || (length es == length ds && checkArgs ds es) = foldr f baseERet es
-      | otherwise = error ("TypeError: " ++ show i ++ " expected " ++ show (length ds) ++ " arguments, but got " ++ show (length es))
-    ds = getMeth i env
     f e baseERet = e env `seq` baseERet
+    checkPrint = all (\e -> eRetType (e env) /= TyVoid) es
+fExprCall i es env
+  | checkMethod = foldr f (baseERet { eRetType = mRetType }) es
+  | otherwise = error ("TypeError: " ++ show i ++ " expected " ++ show (length mParams) ++ " arguments, but got " ++ show (length es))
+  where
+    Method{..} = getMeth i env
+    f e baseERet = e env `seq` baseERet
+    checkMethod = length es == length mParams && checkArgs mParams es
     checkArgs [] [] = True
     checkArgs (Decl d di:ds) (e:es)
       | eRetType (e env) == d = checkArgs ds es

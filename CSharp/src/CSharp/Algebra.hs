@@ -34,7 +34,7 @@ data CSharpAlgebra c m s e
 -- refers to the 'memberD' field of the given algebra.
 foldCSharp :: CSharpAlgebra c m s e -> Class -> c
 foldCSharp CSharpAlgebra{..} = fClas where
-  fClas (Class      t ms)     = trace (show ms) clas t (map fMemb ms)
+  fClas (Class      t ms)     = clas t (map fMemb ms)
 
   fMemb (MemberD    d)        = memberD d
   fMemb (MemberE    e)        = memberE (fExpr e)

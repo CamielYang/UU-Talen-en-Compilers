@@ -26,11 +26,11 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
 
 4. (0.5 pt)
     Make the parser handle both left-associative and right-associative operators.
-  
+
     Again, use the official language reference to determine what the assocativity of each operator should be!
 
     This means that, e.g.
-  
+
     * `a = b = 1` should be parsed as `a = (b = 1)` (right-associative)
     * `a + b + c` should be parsed as `(a + b) + c` (left-associative)
 
@@ -116,7 +116,7 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
     You may choose whether you want to pass the result via register
     or via the stack.
 
-11. (1 pt)
+11. (1 pt) - Done
     Modify the compiler to fail at compile-time if the input contains
     any references to undefined variables.
 
@@ -124,7 +124,7 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
 
     Modify `src/Main.hs` accordingly and document what errors your compiler can give.
 
-12. (0.5 pt)
+12. (0.5 pt) - Done
     Modify the compiler to fail at compile-time if the input contains
     any assignments to variables of the wrong type.
 
@@ -132,19 +132,19 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
 
     Modify `src/Main.hs` accordingly and document what errors your compiler can give.
 
-13. (bonus, 0.5 pt)
+13. (bonus, 0.5 pt) - Done
     Modify the compiler to fail at compile-time if the input contains
     any function calls with the wrong number of arguments.
-    
+
     Modify `src/Main.hs` accordingly and document what errors your compiler can give.
 
-14. (bonus, 0.5 pt)
+14. (bonus, 0.5 pt) - Done
     Modify the compiler to fail at compile-time if the input contains
     any function calls with arguments of the wrong type.
-    
+
     Modify `src/Main.hs` accordingly and document what errors your compiler can give.
 
-15. (bonus, 1 pt)
+15. (bonus, 1 pt) - Done
     Modify the code generator such that declared member variables can be used.
 
     Our C# programs consist of exactly one `Class`,
@@ -168,7 +168,7 @@ rather than as a single operator.
 
 ### Simple Stack Machine
 
-To simplify generation of target code for the simple stack machine, 
+To simplify generation of target code for the simple stack machine,
 the file `src/SSM.hs` defines an abstract syntax tree for SSM code.
 
 This allows the generation of SSM code to be split into two parts:
@@ -206,7 +206,7 @@ assignment Johan Jeuring has been using.
 * Copying solutions from the internet is not allowed.
 
 * You may work alone or with one other person.
-  This does not have to be the same team as in previous assignments. 
+  This does not have to be the same team as in previous assignments.
 
     Please include the full names and student numbers of *all* team members on a header at the top of the Main file.
 
