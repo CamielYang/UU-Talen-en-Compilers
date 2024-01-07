@@ -40,14 +40,14 @@ foldCSharp CSharpAlgebra{..} = fClas where
   fMemb (MemberE    e)        = memberE (fExpr e)
   fMemb (MemberM    t m ps s) = memberM t m ps (fStat s)
 
-  fStat (StatDecl   d)        = statDecl d
-  fStat (StatExpr   e)        = statExpr (fExpr e)
-  fStat (StatIf     e s1 s2)  = statIf (fExpr e) (fStat s1) (fStat s2)
-  fStat (StatWhile  e s1)     = statWhile (fExpr e) (fStat s1)
+  fStat (StatDecl   d)        = statDecl   d
+  fStat (StatExpr   e)        = statExpr   (fExpr e)
+  fStat (StatIf     e s1 s2)  = statIf     (fExpr e) (fStat s1) (fStat s2)
+  fStat (StatWhile  e s1)     = statWhile  (fExpr e) (fStat s1)
   fStat (StatReturn e)        = statReturn (fExpr e)
-  fStat (StatBlock  ss)       = statBlock (map fStat ss)
+  fStat (StatBlock  ss)       = statBlock  (map fStat ss)
 
-  fExpr (ExprLit    lit)      = exprLit lit
-  fExpr (ExprVar    var)      = exprVar var
+  fExpr (ExprLit    lit)      = exprLit  lit
+  fExpr (ExprVar    var)      = exprVar  var
   fExpr (ExprOper   op e1 e2) = exprOper op (fExpr e1) (fExpr e2)
-  fExpr (ExprCall   m es)     = exprCall m (map fExpr es)
+  fExpr (ExprCall   m es)     = exprCall m  (map fExpr es)
