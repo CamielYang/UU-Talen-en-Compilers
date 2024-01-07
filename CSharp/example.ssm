@@ -33,6 +33,13 @@ main:
 	LDS 5
 	AJS -1
 	LDC 10
+	Bsr fac
+	AJS -1
+	LDS 3
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDC 10
 	Bsr printFor
 	AJS -1
 	LDS 3
@@ -153,63 +160,100 @@ printAdd:
 	AJS -1
 	RET
 	RET
-printFor:
+fac:
 	LDS -1
 	LDLA 47
 	STA 0
-	LDC 0
+	LDC 1
+	LDS 0
+	LDLA 49
+	STA 0
+	AJS -1
+	LDC 1
 	LDS 0
 	LDLA 48
 	STA 0
 	AJS -1
-	BRA 21
+	BRA 26
 	LDL 48
-	TRAP 0
-	AJS 1
+	LDL 49
+	MUL
+	LDS 0
+	LDLA 48
+	STA 0
 	AJS -1
-	LDL 48
+	LDL 49
 	LDC 1
 	ADD
 	LDS 0
-	LDLA 48
+	LDLA 49
 	STA 0
 	AJS -1
-	LDL 48
+	LDL 49
 	LDL 47
+	LE
+	BRT -33
+	LDL 48
+	AJS -1
+	RET
+	RET
+printFor:
+	LDS -1
+	LDLA 50
+	STA 0
+	LDC 0
+	LDS 0
+	LDLA 51
+	STA 0
+	AJS -1
+	BRA 21
+	LDL 51
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDL 51
+	LDC 1
+	ADD
+	LDS 0
+	LDLA 51
+	STA 0
+	AJS -1
+	LDL 51
+	LDL 50
 	LT
 	BRT -28
 	RET
 printWhile:
 	LDS -1
-	LDLA 49
+	LDLA 52
 	STA 0
 	LDC 0
 	LDS 0
-	LDLA 50
+	LDLA 53
 	STA 0
 	AJS -1
 	BRA 21
-	LDL 50
+	LDL 53
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 50
+	LDL 53
 	LDC 1
 	ADD
 	LDS 0
-	LDLA 50
+	LDLA 53
 	STA 0
 	AJS -1
-	LDL 50
-	LDL 49
+	LDL 53
+	LDL 52
 	LT
 	BRT -28
 	RET
 rInt:
 	LDS -1
-	LDLA 49
+	LDLA 52
 	STA 0
-	LDL 49
+	LDL 52
 	AJS -1
 	RET
 	RET

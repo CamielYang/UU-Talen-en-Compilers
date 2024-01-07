@@ -14,6 +14,7 @@ class Hello
         print3(1, 2, 3);
 
         // test for and while
+        print(fac(10));
         printFor(10);
         printWhile(10);
 
@@ -53,6 +54,18 @@ class Hello
         print(x + y);
 
         return x + y;
+    }
+
+    int fac(int x)
+    {
+        int r; int t;
+        t = 1; r = 1;
+        while (t <= x)
+        {
+            r = r * t;
+            t = t + 1;
+        }
+        return r;
     }
 
     void printFor(int n)
