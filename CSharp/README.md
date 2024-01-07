@@ -11,20 +11,20 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
 
 ## Tasks
 
-1. (0 pt)
+1. (0 pt) - Done
     Get familiar with the features the compilers already supports, and the testing framework.
 
-2. (1 pt)
+2. (1 pt) - Done
     Fix the priorities of the operators. In the starting framework, all
     operators have the same priority. Use the official C# reference to determine the correct order of operations:
 
     * <https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/>
     * <https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/expressions>
 
-3. (0.5pt)
+3. (0.5pt) - Done
     In the lexer, discard C# single-line comments.
 
-4. (0.5 pt)
+4. (0.5 pt) - Done
     Make the parser handle both left-associative and right-associative operators.
 
     Again, use the official language reference to determine what the assocativity of each operator should be!
@@ -34,7 +34,7 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
     * `a = b = 1` should be parsed as `a = (b = 1)` (right-associative)
     * `a + b + c` should be parsed as `(a + b) + c` (left-associative)
 
-5. (1 pt)
+5. (1 pt) - Done
     Extend the compiler to support a `for` statement.
     In particular, we extend the grammar as such:
 
@@ -56,7 +56,7 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
     Hint: Rather than changing the AST, fold, algebra, and code generation,
     you may find it easier to translate `for` loops into `while` loops.
 
-6. (2 pt)
+6. (2 pt) - Done
     Adapt the code generator such that the declared local variables can be used.
 
     Hint: you should change the result type for statements in the algebra to be a *pair* of two things:
@@ -66,12 +66,12 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
     but they *always* must be declared *before use*.
     So, in a sequence of statements, the environment passed to a statement must contain all variables declared before it.
 
-7. (1.0 pt)
+7. (1.0 pt) - Done
     Change the code generator for the logical operators, so that they are computed lazily, as is usual in C#.
 
     In other words, the right operand should only be evaluated if necessary to determine the result.
 
-8. (1.5 pt)
+8. (1.5 pt) - Done
     Add the possibility to 'call a method with parameters' to the syntax of expressions,
     and add the possibility to deal with such calls to the rest of the compiler.
 
@@ -80,7 +80,7 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
     Hint: In the codeAlgebra, you have to change the result types.
     You need to pass around an environment that contains the addresses of parameters.
 
-9. (0.5pt)
+9. (0.5pt) - Done
     Add a special case for a method call to `print` which,
     instead of jumping to the label "`print`",
     evaluates its argument(s) and does `TRAP 0` for each argument.
@@ -110,7 +110,7 @@ It is made and maintained by an ex-student over at https://github.com/J00LZ/ssmr
 
     should first print `1`, and then print `2`.
 
-10. (1 pt)
+10. (1 pt) - Done
     Extend the code generator such that methods can have a result.
 
     You may choose whether you want to pass the result via register

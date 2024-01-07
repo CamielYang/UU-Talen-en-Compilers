@@ -4,34 +4,113 @@
 	STA 0
 	Bsr main
 	HALT
-test:
-	LDS -1
+main:
+	LDL 42
+	LDC 10
+	MUL
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDC 3
+	Bsr rInt
+	AJS -1
+	LDS 3
+	Bsr printSquare
+	AJS -1
+	LDS 3
+	AJS -1
+	LDC 4
+	LDC 5
+	Bsr printAdd
+	AJS -2
+	LDS 4
+	AJS -1
+	LDC 1
+	LDC 2
+	LDC 3
+	Bsr print3
+	AJS -3
+	LDS 5
+	AJS -1
+	LDC 10
+	Bsr printFor
+	AJS -1
+	LDS 3
+	AJS -1
+	LDC 10
+	Bsr printWhile
+	AJS -1
+	LDS 3
+	AJS -1
+	LDC 3
+	Bsr rInt
+	AJS -1
+	LDS 3
+	Bsr printSquare
+	AJS -1
+	LDS 3
+	LDS 0
 	LDLA 43
 	STA 0
+	AJS -1
 	LDL 43
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDC 40
+	Bsr rInt
+	AJS -1
+	LDS 3
+	LDC 5
+	Bsr rInt
+	AJS -1
+	LDS 3
+	Bsr printAdd
+	AJS -2
+	LDS 4
+	LDS 0
+	LDLA 43
+	STA 0
+	AJS -1
+	LDL 43
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDL 42
+	LDC 10
+	MUL
+	TRAP 0
+	AJS 1
+	AJS -1
+	RET
+test:
+	LDS -1
+	LDLA 44
+	STA 0
+	LDL 44
 	TRAP 0
 	AJS 1
 	AJS -1
 	RET
 print3:
 	LDS -3
-	LDLA 45
+	LDLA 46
 	STA 0
 	LDS -2
-	LDLA 44
+	LDLA 45
 	STA 0
 	LDS -1
-	LDLA 43
+	LDLA 44
 	STA 0
+	LDL 46
+	TRAP 0
 	LDL 45
 	TRAP 0
 	LDL 44
 	TRAP 0
-	LDL 43
-	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 43
+	LDL 44
 	LDC 1
 	ADD
 	Bsr test
@@ -41,16 +120,16 @@ print3:
 	RET
 printSquare:
 	LDS -1
-	LDLA 45
+	LDLA 46
 	STA 0
-	LDL 45
-	LDL 45
+	LDL 46
+	LDL 46
 	MUL
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 45
-	LDL 45
+	LDL 46
+	LDL 46
 	MUL
 	AJS -1
 	RET
@@ -133,83 +212,4 @@ rInt:
 	LDL 49
 	AJS -1
 	RET
-	RET
-main:
-	LDL 42
-	LDC 10
-	MUL
-	TRAP 0
-	AJS 1
-	AJS -1
-	LDC 3
-	Bsr rInt
-	AJS -1
-	LDS 3
-	Bsr printSquare
-	AJS -1
-	LDS 3
-	AJS -1
-	LDC 4
-	LDC 5
-	Bsr printAdd
-	AJS -2
-	LDS 4
-	AJS -1
-	LDC 1
-	LDC 2
-	LDC 3
-	Bsr print3
-	AJS -3
-	LDS 5
-	AJS -1
-	LDC 10
-	Bsr printFor
-	AJS -1
-	LDS 3
-	AJS -1
-	LDC 10
-	Bsr printWhile
-	AJS -1
-	LDS 3
-	AJS -1
-	LDC 3
-	Bsr rInt
-	AJS -1
-	LDS 3
-	Bsr printSquare
-	AJS -1
-	LDS 3
-	LDS 0
-	LDLA 49
-	STA 0
-	AJS -1
-	LDL 49
-	TRAP 0
-	AJS 1
-	AJS -1
-	LDC 40
-	Bsr rInt
-	AJS -1
-	LDS 3
-	LDC 5
-	Bsr rInt
-	AJS -1
-	LDS 3
-	Bsr printAdd
-	AJS -2
-	LDS 4
-	LDS 0
-	LDLA 49
-	STA 0
-	AJS -1
-	LDL 49
-	TRAP 0
-	AJS 1
-	AJS -1
-	LDL 42
-	LDC 10
-	MUL
-	TRAP 0
-	AJS 1
-	AJS -1
 	RET

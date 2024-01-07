@@ -9,6 +9,8 @@ import qualified Data.Map              as M
 import           Prelude               hiding (EQ, GT, LT)
 import Debug.Trace
 
+data Compilation = Syntax | Analysis deriving (Show, Eq)
+
 type DEnv = M.Map Ident RetType
 type MEnv = M.Map Ident Method
 
@@ -23,6 +25,7 @@ data ERet = ERet {
 } deriving (Show)
 
 data Env = Env {
+  compilation :: Compilation,
   denv :: DEnv,
   menv :: MEnv
 } deriving (Show)
@@ -56,6 +59,7 @@ analysisAlgebra = CSharpAlgebra
 
 emptyEnv :: Env
 emptyEnv = Env {
+  compilation = Syntax,
   denv = M.empty,
   menv = M.empty
 }
@@ -77,37 +81,47 @@ getMeth i Env{..}
   | otherwise = error ("TypeError: " ++ show i ++ " is not defined")
 
 fClass :: ClassName -> [M] -> C
-fClass _ ms = mscs `seq` True
+fClass _ ms = trace (show passSyntax ++ show passAnalysis)
+  passSyntax `seq`
+  passAnalysis `seq`
+  True
   where
-    mscs = foldl f emptyEnv ms
+    passSyntax = foldl f (emptyEnv { compilation = Syntax }) ms
+    passAnalysis = foldl f (passSyntax { compilation = Analysis }) ms
     f env m = let env' = m env in env'
 
 fMembDecl :: Decl -> M
-fMembDecl = insertDecl
+fMembDecl d env@Env{..}
+  | compilation == Syntax = insertDecl d env
+  | otherwise = env
 
 fMembExpr :: E -> M
 fMembExpr e env = e env `seq` env
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth rt i ps s env = s (foldr insertDecl (insertMeth rt ps i env) ps)
+fMembMeth rt i ps s env@Env{..}
+  | compilation == Syntax = s (foldr insertDecl (insertMeth rt ps i env) ps)
+  | otherwise = s env
 
 fStatDecl :: Decl -> S
-fStatDecl = insertDecl
+fStatDecl d env@Env{..}
+  | compilation == Syntax = insertDecl d env
+  | otherwise = env
 
 fStatExpr :: E -> S
-fStatExpr e env = e env `seq` env
+fStatExpr e  env@Env{..} = e env `seq` env
 
 fStatIf :: E -> S -> S -> S
-fStatIf e s1 s2 env = e env `seq` s1 $ s2 env `seq` env
+fStatIf e s1 s2 env@Env{..} = e env `seq` s1 env `seq` s2 env `seq` env
 
 fStatWhile :: E -> S -> S
-fStatWhile e s env = e env `seq` s env
+fStatWhile e s env@Env{..} = e env `seq` s env `seq` env
 
 fStatReturn :: E -> S
-fStatReturn e env = e env `seq` env
+fStatReturn e env@Env{..} = e env `seq` env
 
 fStatBlock :: [S] -> S
-fStatBlock ss env = foldl (\env s -> s env) env ss
+fStatBlock ss env@Env{..} = foldl (\env s -> s env) env ss
 
 fExprLit :: Literal -> E
 fExprLit l env = baseERet { eRetType = n }
@@ -126,6 +140,7 @@ variableError :: Ident -> RetType -> RetType -> Env -> a
 variableError v r1 r2 env = error ("TypeError: \"" ++ v ++ "\" expected (" ++ show r1 ++ ") but got (" ++ show r2 ++ ")")
 
 fExprOp :: Operator -> E -> E -> E
+fExprOp _ _ _ e@Env { compilation = Syntax } = baseERet
 fExprOp OpAsg address value env
   | getDecl (eIdent $ address env) env == eRetType (value env) = baseERet
   | otherwise = variableError (eIdent $ address env) (getDecl (eIdent $ address env) env) (eRetType (value env)) env
@@ -143,6 +158,7 @@ fExprOp op e1 e2 env =
   }
 
 fExprCall :: Ident -> [E] -> E
+fExprCall _ _ e@Env { compilation = Syntax } = baseERet
 fExprCall "print" es env
   | all (\e -> eRetType (e env) /= TyVoid) es = foldr f baseERet es
   | otherwise = error "TypeError: print cannot have void arguments"

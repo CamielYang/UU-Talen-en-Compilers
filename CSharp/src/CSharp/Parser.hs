@@ -358,23 +358,3 @@ bracketed     p = pack (punctuation SOpen) p (punctuation SClose) --[p]
 braced        p = pack (punctuation COpen) p (punctuation CClose) --{p}
 
 --- End Parser ----
-
-
--- test = StatBlock [
---   StatExpr (ExprDecl (Decl (NV TyInt) "i"))
---  ,StatExpr (ExprOper OpAsg (ExprVar "i") (ExprLit (LitInt 0)))
---  ,StatWhile
---     (ExprOper OpLt (ExprVar "i") (ExprLit (LitInt 5)))
---     (StatBlock [
---       StatBlock [
---                   StatExpr
---                     (ExprOper OpAsg (ExprVar "i")
---                     (ExprOper OpAdd (ExprVar "i")
---                     (ExprLit (LitInt 1))))
---                 ]
---      ,StatExpr
---           (ExprOper OpAsg (ExprVar "i")
---           (ExprOper OpAdd (ExprVar "i")
---           (ExprLit (LitInt 1))))
---     ])
---   ]
