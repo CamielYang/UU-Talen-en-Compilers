@@ -70,7 +70,7 @@ insertDecl (Decl rt i) env = env { denv = M.insert i rt (denv env) }
 getDecl :: Ident -> Env -> RetType
 getDecl i Env{..}
   | M.member i denv = denv M.! i
-  | otherwise       = error ("TypeError: " ++ show i ++ " is not defined")
+  | otherwise       = error $ unwords ["TypeError:", show i, "is not defined"]
 
 insertMeth :: RetType -> [Decl] -> Ident -> Env -> Env
 insertMeth rt ds i env = env { menv = M.insert i (Method rt ds) (menv env) }
@@ -78,7 +78,7 @@ insertMeth rt ds i env = env { menv = M.insert i (Method rt ds) (menv env) }
 getMeth :: Ident -> Env -> Method
 getMeth i Env{..}
   | M.member i menv = menv M.! i
-  | otherwise       = error ("TypeError: " ++ show i ++ " is not defined")
+  | otherwise       = error $ unwords ["TypeError:", show i,"is not defined"]
 
 fClass :: ClassName -> [M] -> C
 fClass _ ms =
@@ -148,12 +148,19 @@ fExprVar i env = getDecl i env `seq` baseERet {
 }
 
 variableError :: Ident -> RetType -> RetType -> Env -> a
-variableError v r1 r2 env = error ("TypeError: \"" ++ v ++ "\" expected (" ++ show r1 ++ ") but got (" ++ show r2 ++ ")")
+variableError v r1 r2 env = error $ unwords [
+    "TypeError:"
+  , "\"" ++ v ++ "\""
+  , "expected"
+  , show r1
+  , "but got"
+  , show r2
+  ]
 
 fExprOp :: Operator -> E -> E -> E
 fExprOp _ _ _ Env { compilation = Syntax } = baseERet
 fExprOp OpAsg address value env
-  | addRt == valRt = baseERet
+  | addRt == valRt = baseERet { eRetType = addRt }
   | otherwise      = variableError addId addRt valRt env
   where
     addId = eIdent $ address env
@@ -183,7 +190,14 @@ fExprCall "print" es env
     checkPrint   = all (\e -> eRetType (e env) /= TyVoid) es
 fExprCall i es env
   | checkMethod = foldr f (baseERet { eRetType = mRetType }) es
-  | otherwise   = error ("TypeError: " ++ show i ++ " expected " ++ show (length mParams) ++ " arguments, but got " ++ show (length es))
+  | otherwise   = error $ unwords [
+    "TypeError:"
+  , show i
+  , "expected"
+  , show (length mParams)
+  , "arguments, but got"
+  , show (length es)
+  ]
   where
     Method{..}      = getMeth i env
     f e baseERet    = e env `seq` baseERet

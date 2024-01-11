@@ -5,6 +5,7 @@ class Hello
 
     void main()
     {
+        print(t);
         // test with global var
         print(a * 10);
 
@@ -15,6 +16,7 @@ class Hello
 
         // test for and while
         print(fac(10));
+        print(facRec(10));
         printFor(10);
         printWhile(10);
 
@@ -66,6 +68,18 @@ class Hello
             t = t + 1;
         }
         return r;
+    }
+
+    int facRec(int x)
+    {
+        if (x == 1)
+        {
+            return 1;
+        }
+        else
+        {
+            return x * fac(x - 1);
+        }
     }
 
     void printFor(int n)
