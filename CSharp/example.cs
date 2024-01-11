@@ -5,7 +5,8 @@ class Hello
 
     void main()
     {
-        print(t);
+        z = 10;
+        print3(x, x, x);
         // test with global var
         print(a * 10);
 

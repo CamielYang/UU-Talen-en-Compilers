@@ -12,6 +12,7 @@ executable starting-framework
       CSharp.Algebra
     , CSharp.CodeGen
     , CSharp.AbstractSyntax
+    , CSharp.Analysis.ScopeAnalysis
     , CSharp.Parser
     , CSharp.Analysis
     , SSM

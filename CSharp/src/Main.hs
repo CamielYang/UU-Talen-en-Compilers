@@ -16,6 +16,8 @@ import           CSharp.Parser             (lexicalScanner)
 import           Prelude                   hiding ((*>), (<$), (<*))
 import           System.Environment
 import           System.FilePath
+import CSharp.Analysis.ScopeAnalysis
+import Data.Either
 
 main :: IO ()
 main = do
@@ -38,6 +40,9 @@ processFile infile = do
   let program = run "parser" (pClass <* eof) . run "lexer" lexicalScanner $ xs
   -- let program = run "lexer" lexicalScanner $ xs
   -- putStrLn (show program)
+  let test = foldCSharp scopeAnalysisAlgebra program
+  putStrLn (show $ test)
+
   case foldCSharp analysisAlgebra program of
     False -> error "analysis failed"
     True -> do
