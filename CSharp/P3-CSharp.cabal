@@ -14,6 +14,7 @@ executable starting-framework
     , CSharp.AbstractSyntax
     , CSharp.Analysis.ScopeAnalysis
     , CSharp.Analysis.TypeAnalysis
+    , CSharp.Analysis.Error
     , CSharp.Parser
     , SSM
   hs-source-dirs:      src

@@ -37,14 +37,12 @@ processFile infile = do
   let outfile = addExtension (dropExtension infile) "ssm"
   xs <- readFile infile
   let program = run "parser" (pClass <* eof) . run "lexer" lexicalScanner $ xs
-  -- let program = run "lexer" lexicalScanner $ xs
-  -- putStrLn (show program)
-  let test = foldCSharp scopeAnalysisAlgebra program
+
   case foldCSharp scopeAnalysisAlgebra program of
     Failure err -> putStrLn $ intercalate "\n\n" err
-    Success _ -> case foldCSharp typeAnalysisAlgebra program of
+    Success _   -> case foldCSharp typeAnalysisAlgebra program of
       Failure err -> putStrLn $ intercalate "\n\n" err
-      Success _ -> do
+      Success _   -> do
         let ssm = formatCode $ foldCSharp codeAlgebra program
         writeFile outfile ssm
         putStrLn (outfile ++ " written")
@@ -54,11 +52,3 @@ run s p x = fst . headOrError . parse (p <* eof) $ x
     where
   headOrError (x : xs) = x
   headOrError []       = error $ "The " <> s <> " returned no full parses."
-
-testExpr =
-  -- run "parser" (pClass <* eof) .
-  -- run "lexer" lexicalScanner
-  -- $ "class Hello {\nvoid main() {\nint b;\nb = 1;\n}\n}"
-  run "parser" (pStat <* eof) .
-  run "lexer" lexicalScanner
-  $ "for (int i; i < 10;) {}"

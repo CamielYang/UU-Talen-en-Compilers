@@ -3,6 +3,7 @@ module CSharp.Analysis.TypeAnalysis where
 import qualified Data.Map as M
 import CSharp.AbstractSyntax
 import CSharp.Algebra
+import CSharp.Analysis.Error
 import Data.Either.Validation
 import Data.Either
 import Debug.Trace
@@ -93,9 +94,7 @@ fMembMeth rt i ps s Symbol env =
       ps)
 fMembMeth rt i ps s Analysis env = case wrongRtType of
   Nothing -> s'
-  Just rt' -> ([], Failure [
-      unwords ["error: Function", show i, "expected", show rt, "but got", show $ eRetType rt']
-    ] <*> sVal)
+  Just rt' -> ([], Failure (typeError ["Function", show i, "expected", show rt, "but got", show $ eRetType rt']) <*> sVal)
   where
     wrongRtType = find (\rt' -> rt /= eRetType rt') rts
     s'@(rts, sVal) = s Analysis env
@@ -138,9 +137,7 @@ fExprOp _ _ _ Symbol env = ([], Success env)
 fExprOp OpAsg addr val Analysis env =
   if eRetType (head $ fst (addr Analysis env)) == eRetType (head $ fst (val Analysis env))
     then (fst (addr Analysis env), Success env)
-    else ([], Failure [
-      unwords ["error: Can't assign", show valRt, "to", show addRt, "on", show addId]
-    ])
+    else ([], Failure $ typeError ["Can't assign", show valRt, "to", show addRt, "on", show addId])
   where
     addId = eIdent   $ head $ fst (addr Analysis env)
     addRt = eRetType $ head $ fst (addr Analysis env)
@@ -163,16 +160,15 @@ fExprCall :: Ident -> [E] -> E
 fExprCall _       ps Symbol   env = foldGo ps Symbol env
 fExprCall "print" ps Analysis env
   | validPrint = foldGo ps Analysis env
-  | otherwise  = ([ERet "print" Nothing TyVoid], Failure [
-      unwords ["error: Function print can't be called with void expressions"]
-    ])
+  | otherwise  = ([ERet "print" Nothing TyVoid], Failure $ typeError ["Function print can't be called with void expressions"])
   where
     validPrint = all (\p -> eRetType (head $ fst $ p Analysis env) /= TyVoid) ps
 fExprCall i ps Analysis env
-  | validTypes && validArgsLength = foldGo ps Analysis env
+  | validTypes && validArgsLength = ([method], snd $ foldGo ps Analysis env)
   | otherwise = ([], Failure $ argErrs <> typeErrs)
   where
-    methodps = fromJust $ eParams $ getDeclRt i env
+    method = getDeclRt i env
+    methodps = fromJust $ eParams method
     psZip = zip
       methodps
       (map (\p -> eRetType $ head $ fst $ p Analysis env) ps)
@@ -181,24 +177,21 @@ fExprCall i ps Analysis env
     validArgsLength = length ps == length methodps
     argErrs
       | validArgsLength = []
-      | otherwise = [
-        unwords [
-          "error: Function",
+      | otherwise = typeError [
+          "Function",
           show i,
           "expected",
           show (length methodps),
           "arguments but got",
           show (length ps)]
-      ]
 
     -- Types
     validTypes = all (\(Decl r1 _, r2) -> r1 == r2) psZip
     typeErrs = foldr fTypeErr [] psZip
     fTypeErr (Decl r1 pi, r2) vs
       | r1 == r2 = vs
-      | otherwise = [
-        unwords [
-          "error: Function",
+      | otherwise = typeError [
+          "Function",
           show i,
           "expected",
           show r1,
@@ -206,5 +199,4 @@ fExprCall i ps Analysis env
           show r2,
           "on argument",
           show pi]
-      ] <> vs
-
+      <> vs

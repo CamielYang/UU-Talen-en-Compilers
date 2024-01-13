@@ -3,7 +3,7 @@ class Hello
     int a;
     a = 10;
 
-    // Test main function with scope and type errors
+    // // Test main function with scope and type errors
     // void main()
     // {
     //     int h;
@@ -13,6 +13,7 @@ class Hello
     //     i = true;
 
     //     print(test(1));
+    //     print3();
     //     print3(true);
     //     printAdd(test(1), test(1));
     // }

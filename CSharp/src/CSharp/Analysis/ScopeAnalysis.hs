@@ -3,6 +3,7 @@ module CSharp.Analysis.ScopeAnalysis where
 import qualified Data.Set as S
 import CSharp.AbstractSyntax
 import CSharp.Algebra
+import CSharp.Analysis.Error
 import Data.Either.Validation
 import Data.Either
 import Debug.Trace
@@ -101,9 +102,7 @@ fExprVar i Symbol   env = Success env
 fExprVar i Analysis env =
   if containsDecl i env
     then Success env
-    else Failure [
-      unwords ["error: Variable", i, "is not in scope"]
-    ]
+    else Failure $ scopeError ["Variable", i, "is not in scope"]
 
 fExprOp :: Operator -> E -> E -> E
 fExprOp _ e1 e2 phase env = go (e1 phase env) (e2 phase env)
@@ -114,8 +113,4 @@ fExprCall "print" ps Analysis env = foldGo ps Analysis env
 fExprCall i       ps Analysis env =
   if containsDecl i env
     then foldGo ps Analysis env
-    else Failure [
-      unwords ["error: Function", i, "is not in scope"]
-    ]
-
-
+    else Failure $ scopeError ["Function", i, "is not in scope"]
