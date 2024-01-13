@@ -3,45 +3,47 @@ class Hello
     int a;
     a = 10;
 
-    void main()
-    {
-        int h;
-        h = true;
-
-        int i;
-        i = true;
-
-        print(test(1));
-        print3(true);
-        printAdd(test(1), test(1));
-    }
-
+    // Test main function with scope and type errors
     // void main()
     // {
-    //     // test with global var
-    //     print(a * 10);
+    //     int h;
+    //     h = true;
 
-    //     // test with calculations and function calls
-    //     printSquare(rInt(3));
-    //     printAdd(4, 5);
-    //     print3(1, 2, 3);
+    //     int i;
+    //     i = true;
 
-    //     // test for and while
-    //     print(fac(10));
-    //     print(facRec(10));
-    //     printFor(10);
-    //     printWhile(10);
-
-    //     // test with return value and reassign to same var
-    //     int x;
-    //     x = printSquare(rInt(3));
-    //     print(x);
-    //     x = printAdd(rInt(40), rInt(5));
-    //     print(x);
-
-    //     // test with global var
-    //     print(a * 10);
+    //     print(test(1));
+    //     print3(true);
+    //     printAdd(test(1), test(1));
     // }
+
+    // Test main function with correct scope and type
+    void main()
+    {
+        // test with global var
+        print(a * 10);
+
+        // test with calculations and function calls
+        printSquare(rInt(3));
+        printAdd(4, 5);
+        print3(1, 2, 3);
+
+        // test for and while
+        print(fac(10));
+        print(facRec(10));
+        printFor(10);
+        printWhile(10);
+
+        // test with return value and reassign to same var
+        int x;
+        x = printSquare(rInt(3));
+        print(x);
+        x = printAdd(rInt(40), rInt(5));
+        print(x);
+
+        // test with global var
+        print(a * 10);
+    }
 
     void test(int a)
     {
