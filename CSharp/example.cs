@@ -3,7 +3,7 @@ class Hello
     int a;
     a = 10;
 
-    // // Test main function with scope and type errors
+    // Test main function with scope and type errors
     // void main()
     // {
     //     int h;

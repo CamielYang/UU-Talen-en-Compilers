@@ -207,48 +207,6 @@ sLowerId = anySymbol >>= \case
   _ -> failp
 
 -- Operator precedence
-sMultiplicative :: Parser Token Operator
-sMultiplicative = anySymbol >>= \case
-  Operator OpMul -> pure OpMul
-  Operator OpDiv -> pure OpDiv
-  Operator OpMod -> pure OpMod
-  _ -> failp
-
-sAdditive :: Parser Token Operator
-sAdditive = anySymbol >>= \case
-  Operator OpAdd -> pure OpAdd
-  Operator OpSub -> pure OpSub
-  _ -> failp
-
-sRelational :: Parser Token Operator
-sRelational = anySymbol >>= \case
-  Operator OpLeq -> pure OpLeq
-  Operator OpLt  -> pure OpLt
-  Operator OpGeq -> pure OpGeq
-  Operator OpGt  -> pure OpGt
-  _ -> failp
-
-sEquality :: Parser Token Operator
-sEquality = anySymbol >>= \case
-  Operator OpEq  -> pure OpEq
-  Operator OpNeq -> pure OpNeq
-  _ -> failp
-
-sConditionalXor :: Parser Token Operator
-sConditionalXor = anySymbol >>= \case
-  Operator OpXor -> pure OpXor
-  _ -> failp
-
-sConditionalAnd :: Parser Token Operator
-sConditionalAnd = anySymbol >>= \case
-  Operator OpAnd -> pure OpAnd
-  _ -> failp
-
-sConditionalOr :: Parser Token Operator
-sConditionalOr = anySymbol >>= \case
-  Operator OpOr -> pure OpOr
-  _ -> failp
-
 sAssignment :: Parser Token Operator
 sAssignment = anySymbol >>= \case
   Operator OpAsg -> pure OpAsg
@@ -314,29 +272,22 @@ pExprSimple = ExprLit  <$> pLiteral
           <|> ExprCall <$> sLowerId <*> parenthesised (option (listOf pExpr (punctuation Comma)) [])
           <|> parenthesised pExpr
 
-pExprMultiplicative :: Parser Token Expr
-pExprMultiplicative = chainl pExprSimple (ExprOper <$> sMultiplicative)
-
-pExprAdditive :: Parser Token Expr
-pExprAdditive = chainl pExprMultiplicative (ExprOper <$> sAdditive)
-
-pExprRelational :: Parser Token Expr
-pExprRelational = chainl pExprAdditive (ExprOper <$> sRelational)
-
-pExprEquality :: Parser Token Expr
-pExprEquality = chainl pExprRelational (ExprOper <$> sEquality)
-
-pExprXor :: Parser Token Expr
-pExprXor = chainl pExprEquality (ExprOper <$> sConditionalXor)
-
-pExprAnd :: Parser Token Expr
-pExprAnd = chainl pExprXor (ExprOper <$> sConditionalAnd)
-
-pExprOr :: Parser Token Expr
-pExprOr = chainl pExprAnd (ExprOper <$> sConditionalOr)
+gen :: [Operator] -> Parser Token Expr -> Parser Token Expr
+gen ops p = chainl p (choice (map (\op -> ExprOper op <$ symbol (Operator op)) ops))
 
 pExpr :: Parser Token Expr
-pExpr = chainr pExprOr (ExprOper <$> sAssignment)
+pExpr =
+  chainr
+    (foldr gen pExprSimple [
+      [OpOr],
+      [OpAnd],
+      [OpXor],
+      [OpEq, OpNeq],
+      [OpLeq, OpLt, OpGeq, OpGt],
+      [OpAdd, OpSub],
+      [OpMul, OpDiv, OpMod]
+    ])
+    (ExprOper <$> sAssignment)
 
 pDecl :: Parser Token Decl
 pDecl = Decl <$> pRetType <*> sLowerId
