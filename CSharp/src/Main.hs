@@ -2,7 +2,6 @@ module Main where
 
 import           CSharp.AbstractSyntax
 import           CSharp.Algebra
-import           CSharp.Analysis
 import           CSharp.CodeGen
 import           CSharp.Parser
 
@@ -11,13 +10,13 @@ import           SSM
 import           ParseLib.Abstract.Derived
 import           ParseLib.Error            (ErrorsPretty)
 
-import           CSharp.CodeGen            (codeAlgebra)
-import           CSharp.Parser             (lexicalScanner)
 import           Prelude                   hiding ((*>), (<$), (<*))
 import           System.Environment
 import           System.FilePath
-import CSharp.Analysis.ScopeAnalysis
-import Data.Either
+import           CSharp.Analysis.ScopeAnalysis
+import           Data.Either.Validation
+import           Data.List
+import CSharp.Analysis.TypeAnalysis (typeAnalysisAlgebra)
 
 main :: IO ()
 main = do
@@ -41,14 +40,14 @@ processFile infile = do
   -- let program = run "lexer" lexicalScanner $ xs
   -- putStrLn (show program)
   let test = foldCSharp scopeAnalysisAlgebra program
-  putStrLn (show $ test)
-
-  case foldCSharp analysisAlgebra program of
-    False -> error "analysis failed"
-    True -> do
-      let ssm = formatCode $ foldCSharp codeAlgebra program
-      writeFile outfile ssm
-      putStrLn (outfile ++ " written")
+  case foldCSharp scopeAnalysisAlgebra program of
+    Failure err -> putStrLn $ intercalate "\n\n" err
+    Success _ -> case foldCSharp typeAnalysisAlgebra program of
+      Failure err -> putStrLn $ intercalate "\n\n" err
+      Success _ -> do
+        let ssm = formatCode $ foldCSharp codeAlgebra program
+        writeFile outfile ssm
+        putStrLn (outfile ++ " written")
 
 run :: (ErrorsPretty s, Ord s, Show a) => String -> Parser s a -> [s] -> a
 run s p x = fst . headOrError . parse (p <* eof) $ x

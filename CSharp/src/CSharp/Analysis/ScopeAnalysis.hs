@@ -3,65 +3,86 @@ module CSharp.Analysis.ScopeAnalysis where
 import qualified Data.Set as S
 import CSharp.AbstractSyntax
 import CSharp.Algebra
+import Data.Either.Validation
 import Data.Either
 import Debug.Trace
 
-type Env = S.Set Ident
+data Phase = Symbol | Analysis deriving (Show, Eq)
+type Env   = S.Set Ident
 
-type C = [String]                     -- Class
-type M = Env -> (C, Env)       -- Member
-type S = Env -> (C, Env)       -- Statement
-type E = Env -> (C, Env)       -- Expression
+type CRT = Phase -> Env -> C
+type C   = Validation [String] Env -- Class
+type M   = CRT                     -- Member
+type S   = CRT                     -- Statement
+type E   = CRT                     -- Expression
 
 scopeAnalysisAlgebra :: CSharpAlgebra C M S E
-scopeAnalysisAlgebra = CSharpAlgebra {
-  clas       = fClass,
-  memberD    = fMembDecl,
-  memberE    = fMembExpr,
-  memberM    = fMembMeth,
-  statDecl   = fStatDecl,
-  statExpr   = fStatExpr,
-  statIf     = fStatIf,
-  statWhile  = fStatWhile,
-  statReturn = fStatReturn,
-  statBlock  = fStatBlock,
-  exprLit    = fExprLit,
-  exprVar    = fExprVar,
-  exprOper   = fExprOp,
-  exprCall   = fExprCall
-}
+scopeAnalysisAlgebra = CSharpAlgebra
+  fClass
+  fMembDecl
+  fMembExpr
+  fMembMeth
+  fStatDecl
+  fStatExpr
+  fStatIf
+  fStatWhile
+  fStatReturn
+  fStatBlock
+  fExprLit
+  fExprVar
+  fExprOp
+  fExprCall
 
 insertDecl :: Decl -> Env -> Env
-insertDecl (Decl rt i) = S.insert i
+insertDecl (Decl _ i) = S.insert i
 
-getDecl :: Ident -> Env -> Bool
-getDecl = S.member
+containsDecl :: Ident -> Env -> Bool
+containsDecl = S.member
+
+foldGo :: [CRT] -> CRT
+foldGo xs phase env = fst $ foldl go (Success env, env) xs
+  where
+    getEnv :: M -> Phase -> Env -> (C, Env)
+    getEnv m phase env = case m phase env of
+      Failure err  -> (Failure err, env)
+      Success env' -> (Success env', env')
+
+    go :: (C, Env) -> CRT -> (C, Env)
+    go (Failure errs, env) m = let (err, env') = getEnv m phase env in (Failure errs <*> err, env')
+    go (Success _, env)    m = getEnv m phase env
+
+go :: C -> C -> C
+go (Failure errs1) (Failure errs2) = Failure (errs1 <> errs2)
+go (Failure errs )  _              = Failure errs
+go  _              (Failure errs ) = Failure errs
+go (Success env1 ) (Success env2 ) = Success $ env1 `S.union` env2
 
 fClass :: ClassName -> [M] -> C
-fClass _ ms = fst (foldl go ([], S.empty) ms)
+fClass _ ms = passAnalysis
   where
-    go :: (C, Env) -> M -> (C, Env)
-    go (es, env) m = let (es', env') = m env in (es ++ es', env')
+    passSymbol   = foldGo ms Symbol S.empty
+    passAnalysis = foldGo ms Analysis (fromRight S.empty (validationToEither passSymbol))
 
 fMembDecl :: Decl -> M
-fMembDecl d env = ([], insertDecl d env)
+fMembDecl d Symbol   env = Success $ insertDecl d env
+fMembDecl d Analysis env = Success env
 
 fMembExpr :: E -> M
 fMembExpr e = e
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth _ _ ps s env = s (foldr insertDecl env ps)
+fMembMeth rt i ps s Symbol   env = s Symbol   (foldr insertDecl (insertDecl (Decl rt i) env) ps)
+fMembMeth _ _ ps s Analysis env = s Analysis env
 
 fStatDecl :: Decl -> S
-fStatDecl d env = ([], insertDecl d env)
+fStatDecl d Symbol   env = Success env
+fStatDecl d Analysis env = Success $ insertDecl d env
 
 fStatExpr :: E -> S
 fStatExpr e = e
 
 fStatIf :: E -> S -> S -> S
-fStatIf _ s1 s2 env = go (s1 env) (s2 env)
-  where
-    go (es1, env1) (es2, env2) = (es1 ++ es2, S.union env1 env2)
+fStatIf _ s1 s2 phase env = go (s1 phase env) (s2 phase env)
 
 fStatWhile :: E -> S -> S
 fStatWhile _ s = s
@@ -70,26 +91,31 @@ fStatReturn :: E -> S
 fStatReturn e = e
 
 fStatBlock :: [S] -> S
-fStatBlock ss env = foldl go ([], env) ss
-  where
-    go (es, env) s = let (es', env') = s env in (es ++ es', env')
+fStatBlock = foldGo
 
 fExprLit :: Literal -> E
-fExprLit _ env = ([], env)
+fExprLit _ _ = Success
 
 fExprVar :: Ident -> E
-fExprVar i env =
-  if getDecl i env
-    then ([], env)
-    else ([i ++ " is not in scope"], env)
+fExprVar i Symbol   env = Success env
+fExprVar i Analysis env =
+  if containsDecl i env
+    then Success env
+    else Failure [
+      unwords ["error: Variable", i, "is not in scope"]
+    ]
 
 fExprOp :: Operator -> E -> E -> E
-fExprOp _ e1 e2 env = go (e1 env) (e2 env)
-  where
-    go (es1, env1) (es2, env2) = (es1 ++ es2, S.union env1 env2)
+fExprOp _ e1 e2 phase env = go (e1 phase env) (e2 phase env)
 
 fExprCall :: Ident -> [E] -> E
-fExprCall i es env = foldl go ([], env) es
-  where
-    go (es, env) e = let (es', env') = e env in (es ++ es', env')
+fExprCall _       ps Symbol   env = foldGo ps Symbol   env
+fExprCall "print" ps Analysis env = foldGo ps Analysis env
+fExprCall i       ps Analysis env =
+  if containsDecl i env
+    then foldGo ps Analysis env
+    else Failure [
+      unwords ["error: Function", i, "is not in scope"]
+    ]
+
 

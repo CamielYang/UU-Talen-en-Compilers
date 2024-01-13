@@ -52,10 +52,18 @@ data Decl = Decl RetType Ident  -- Variable declarations
 
 -- (Simplified) types of C#, not including "void"
 data Type = TyBool | TyInt
-  deriving (Eq, Show, Ord, Enum, Bounded)
+  deriving (Eq, Ord, Enum, Bounded)
 
 -- (Simplified) types of C#, including "void"
 data RetType
   = TyVoid      -- "void"
   | NV Type     -- "not void"
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Show RetType where
+  show TyVoid = "void"
+  show (NV t) = show t
+
+instance Show Type where
+  show TyBool = "bool"
+  show TyInt  = "int"
