@@ -24,7 +24,6 @@ type M = Env -> (GlobalOrLocal, Env, Code) -- Member
 type S = Env -> (Env, Code)                -- Statement
 type E = Env -> (ValueOrAddress -> Code)   -- Expression
 
-
 codeAlgebra :: CSharpAlgebra C M S E
 codeAlgebra = CSharpAlgebra
   fClass
@@ -114,10 +113,10 @@ codeBool :: Bool -> Env -> Code
 codeBool bool env = fExprLit (LitBool bool) env Value
 
 fExprVar :: Ident -> E
-fExprVar x env va = case va of
+fExprVar i env va = case va of
     Value   ->  [LDL  loc]
     Address ->  [LDLA loc]
-  where loc = getDecl x env
+  where loc = getDecl i env
 
 fExprOp :: Operator -> E -> E -> E
 fExprOp OpAsg e1 e2 env va = e2 env Value ++ [LDS 0] ++ e1 env Address ++ [STA 0]

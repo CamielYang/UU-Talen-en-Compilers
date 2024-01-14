@@ -3,6 +3,7 @@ module CSharp.Algebra where
 
 import           CSharp.AbstractSyntax
 import          Debug.Trace
+import Data.List (partition)
 
 {-
   Only modify this file when you change the AST in CSharpGram.hs
@@ -34,8 +35,10 @@ data CSharpAlgebra c m s e
 -- refers to the 'memberD' field of the given algebra.
 foldCSharp :: CSharpAlgebra c m s e -> Class -> c
 foldCSharp CSharpAlgebra{..} = fClas where
-  fClas (Class      t ms)     = clas t (map fMemb ms)
-
+  -- Reorder the members so that global members come first.
+  fClas (Class      t ms)     =
+    let (globalM, localM) = partition (not . isMemberM) ms in
+      clas t (map fMemb $ globalM ++ localM)
   fMemb (MemberD    d)        = memberD d
   fMemb (MemberE    e)        = memberE (fExpr e)
   fMemb (MemberM    t m ps s) = memberM t m ps (fStat s)
@@ -51,3 +54,7 @@ foldCSharp CSharpAlgebra{..} = fClas where
   fExpr (ExprVar    var)      = exprVar  var
   fExpr (ExprOper   op e1 e2) = exprOper op (fExpr e1) (fExpr e2)
   fExpr (ExprCall   m es)     = exprCall m  (map fExpr es)
+
+  isMemberM = \case
+    MemberM {} -> True
+    _          -> False

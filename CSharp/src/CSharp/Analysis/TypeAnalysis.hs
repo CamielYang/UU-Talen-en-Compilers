@@ -137,7 +137,10 @@ fExprOp _ _ _ Symbol env = ([], Success env)
 fExprOp OpAsg addr val Analysis env =
   if eRetType (head $ fst (addr Analysis env)) == eRetType (head $ fst (val Analysis env))
     then (fst (addr Analysis env), Success env)
-    else ([], Failure $ typeError ["Can't assign", show valRt, "to", show addRt, "on", show addId])
+    else (
+      [],
+      Failure $ typeError ["Can't assign", show valRt, "to", show addRt, "on", show addId]
+    )
   where
     addId = eIdent   $ head $ fst (addr Analysis env)
     addRt = eRetType $ head $ fst (addr Analysis env)
@@ -160,21 +163,25 @@ fExprCall :: Ident -> [E] -> E
 fExprCall _       ps Symbol   env = foldGo ps Symbol env
 fExprCall "print" ps Analysis env
   | validPrint = foldGo ps Analysis env
-  | otherwise  = ([ERet "print" Nothing TyVoid], Failure $ typeError ["Function print can't be called with void expressions"])
+  | otherwise  = (
+    [ERet "print" Nothing TyVoid],
+    Failure $ typeError ["Function print can't be called with void expressions"]
+  )
   where
     validPrint = all (\p -> eRetType (head $ fst $ p Analysis env) /= TyVoid) ps
-fExprCall i ps Analysis env
-  | validTypes && validArgsLength = ([method], snd $ foldGo ps Analysis env)
+fExprCall i args Analysis env
+  | validTypes && validArgsLength = ([method], snd $ foldGo args Analysis env)
   | otherwise = ([], Failure $ argErrs <> typeErrs)
   where
     method = getDeclRt i env
     methodps = fromJust $ eParams method
+    methodargs = map (\p -> eRetType $ head $ fst $ p Analysis env) args
     psZip = zip
       methodps
-      (map (\p -> eRetType $ head $ fst $ p Analysis env) ps)
+      methodargs
 
     -- Arguments
-    validArgsLength = length ps == length methodps
+    validArgsLength = length args == length methodps
     argErrs
       | validArgsLength = []
       | otherwise = typeError [
@@ -183,7 +190,7 @@ fExprCall i ps Analysis env
           "expected",
           show (length methodps),
           "arguments but got",
-          show (length ps)]
+          show (length args)]
 
     -- Types
     validTypes = all (\(Decl r1 _, r2) -> r1 == r2) psZip

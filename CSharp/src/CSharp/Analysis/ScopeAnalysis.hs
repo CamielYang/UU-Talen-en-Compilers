@@ -72,8 +72,8 @@ fMembExpr :: E -> M
 fMembExpr e = e
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth rt i ps s Symbol   env = s Symbol   (foldr insertDecl (insertDecl (Decl rt i) env) ps)
-fMembMeth _ _ ps s Analysis env = s Analysis env
+fMembMeth rt i ps s Symbol  env = s Symbol   (insertDecl (Decl rt i) env)
+fMembMeth _ _ ps s Analysis env = s Analysis (foldr insertDecl env ps)
 
 fStatDecl :: Decl -> S
 fStatDecl d Symbol   env = Success env
@@ -108,9 +108,9 @@ fExprOp :: Operator -> E -> E -> E
 fExprOp _ e1 e2 phase env = go (e1 phase env) (e2 phase env)
 
 fExprCall :: Ident -> [E] -> E
-fExprCall _       ps Symbol   env = foldGo ps Symbol   env
-fExprCall "print" ps Analysis env = foldGo ps Analysis env
-fExprCall i       ps Analysis env =
+fExprCall _       args Symbol   env = foldGo args Symbol   env
+fExprCall "print" args Analysis env = foldGo args Analysis env
+fExprCall i       args Analysis env =
   if containsDecl i env
-    then foldGo ps Analysis env
+    then foldGo args Analysis env
     else Failure $ scopeError ["Function", i, "is not in scope"]
