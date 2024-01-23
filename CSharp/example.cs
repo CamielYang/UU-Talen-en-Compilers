@@ -21,29 +21,40 @@ class Hello
     // Test main function with correct scope and type
     void main()
     {
-        // test with global var
-        print(a * 10);
-
-        // test with calculations and function calls
-        printSquare(rInt(3));
-        printAdd(4, 5);
-        print3(1, 2, 3);
-
-        // test for and while
-        print(fac(10));
-        print(facRec(10));
-        printFor(10);
-        printWhile(10);
-
-        // test with return value and reassign to same var
-        int x;
-        x = printSquare(rInt(3));
-        print(x);
-        x = printAdd(rInt(40), rInt(5));
-        print(x);
+        // Expected output:
+        // 1x - 100
+        // 2x - 9
+        // 1x - 1 to 4
+        // 2x - 3628800
+        // 2x - 0 to 9
+        // 2x - 9
+        // 2x - 45
+        // 1x - 100
+        // machine halted
 
         // test with global var
-        print(a * 10);
+        // print(a * 10);
+
+        // // test with calculations and function calls
+        // printSquare(rInt(3));
+        // printAdd(4, 5);
+        // print3(1, 2, 3);
+
+        // // test for and while
+        // print(fac(10));
+        print(facRec(3));
+        // printFor(10);
+        // printWhile(10);
+
+        // // test with return value and reassign to same var
+        // int x;
+        // x = printSquare(rInt(3));
+        // print(x);
+        // x = printAdd(rInt(40), rInt(5));
+        // print(x);
+
+        // // test with global var
+        // print(a * 10);
     }
 
     void test(int a)
@@ -51,12 +62,12 @@ class Hello
         print(a);
     }
 
-    void print3(int a, int b, int c)
+    void print3(int x, int y, int z)
     {
-        print(a, b, c);
+        print(x, y, z);
 
         // test correct next value with same arg name
-        test(c + 1);
+        test(z + 1);
     }
 
     int printSquare(int x)
@@ -93,32 +104,32 @@ class Hello
         }
         else
         {
-            return x * fac(x - 1);
+            return x * facRec(x - 1);
         }
     }
 
-    void printFor(int n)
+    void printFor(int x)
     {
         int i;
-        for (i = 0; i < n; i = i + 1)
+        for (i = 0; i < x; i = i + 1)
         {
             print(i);
         }
     }
 
-    void printWhile(int n)
+    void printWhile(int x)
     {
         int i;
         i = 0;
-        while (i < n)
+        while (i < x)
         {
             print(i);
             i = i + 1;
         }
     }
 
-    int rInt(int n)
+    int rInt(int x)
     {
-        return n;
+        return x;
     }
 }

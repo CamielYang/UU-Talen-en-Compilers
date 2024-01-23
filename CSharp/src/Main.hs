@@ -54,6 +54,6 @@ run s p x = fst . headOrError . parse (p <* eof) $ x
   headOrError []       = error $ "The " <> s <> " returned no full parses."
 
 testGrammarPiece =
-  run "parser" (pExpr <* eof) .
+  run "parser" (pStat <* eof) .
   run "lexer" lexicalScanner $
-  "1 + 2 * 3"
+  "1 * (2 + 1 * 4) + 3"
