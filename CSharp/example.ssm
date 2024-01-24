@@ -1,42 +1,128 @@
-	LDC 10
-	LDS 0
-	LDLA 0
-	STA 0
+	LDLA 1
+	STR R4
 	Bsr main
 	HALT
 main:
+	LDR MP
+	LDRR MP SP
+	AJS 1
 	LDC 10
 	LDS 0
 	LDLA 1
 	STA 0
+	AJS -1
+	LDL 1
+	LDC 10
+	MUL
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDC 3
+	Bsr rInt
+	AJS -1
+	LDR R3
+	Bsr printSquare
+	AJS -1
+	LDR R3
+	AJS -1
+	LDC 4
+	LDC 5
+	Bsr printAdd
+	AJS -1
+	LDR R3
+	AJS -1
+	LDC 1
+	LDC 2
+	LDC 3
+	Bsr print3
+	AJS -1
+	LDR R3
 	AJS -1
 	LDC 10
 	Bsr fac
 	AJS -1
-	LDS 3
+	LDR R3
 	TRAP 0
 	AJS 1
 	AJS -1
+	LDC 10
+	Bsr facRec
+	AJS -1
+	LDR R3
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDC 10
+	Bsr printFor
+	AJS -1
+	LDR R3
+	AJS -1
+	LDC 10
+	Bsr printWhile
+	AJS -1
+	LDR R3
+	AJS -1
+	AJS 1
+	LDC 3
+	Bsr rInt
+	AJS -1
+	LDR R3
+	Bsr printSquare
+	AJS -1
+	LDR R3
+	LDS 0
+	LDLA 2
+	STA 0
+	AJS -1
+	LDL 2
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDC 40
+	Bsr rInt
+	AJS -1
+	LDR R3
+	LDC 5
+	Bsr rInt
+	AJS -1
+	LDR R3
+	Bsr printAdd
+	AJS -1
+	LDR R3
+	LDS 0
+	LDLA 2
+	STA 0
+	AJS -1
+	LDL 2
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDL 1
+	LDC 10
+	MUL
+	TRAP 0
+	AJS 1
+	AJS -1
+	LDRR SP MP
+	STR MP
 	RET
 test:
-	LDS -1
-	LDLA 1
-	STA 0
+	LDR MP
+	LDRR MP SP
+	LDS -2
 	LDL 1
 	TRAP 0
 	AJS 1
 	AJS -1
+	LDRR SP MP
+	STR MP
 	RET
 print3:
-	LDS -3
-	LDLA 3
-	STA 0
-	LDS -2
-	LDLA 2
-	STA 0
-	LDS -1
-	LDLA 1
-	STA 0
+	LDR MP
+	LDRR MP SP
+	LDS -4
+	LDS -4
+	LDS -4
 	LDL 3
 	TRAP 0
 	LDL 2
@@ -50,13 +136,15 @@ print3:
 	ADD
 	Bsr test
 	AJS -1
-	LDS 3
+	LDR R3
 	AJS -1
+	LDRR SP MP
+	STR MP
 	RET
 printSquare:
-	LDS -1
-	LDLA 1
-	STA 0
+	LDR MP
+	LDRR MP SP
+	LDS -2
 	LDL 1
 	LDL 1
 	MUL
@@ -66,16 +154,19 @@ printSquare:
 	LDL 1
 	LDL 1
 	MUL
+	STR R3
 	AJS -1
+	LDRR SP MP
+	STR MP
 	RET
+	LDRR SP MP
+	STR MP
 	RET
 printAdd:
-	LDS -2
-	LDLA 2
-	STA 0
-	LDS -1
-	LDLA 1
-	STA 0
+	LDR MP
+	LDRR MP SP
+	LDS -3
+	LDS -3
 	LDL 2
 	LDL 1
 	ADD
@@ -85,13 +176,20 @@ printAdd:
 	LDL 2
 	LDL 1
 	ADD
+	STR R3
 	AJS -1
+	LDRR SP MP
+	STR MP
 	RET
+	LDRR SP MP
+	STR MP
 	RET
 fac:
-	LDS -1
-	LDLA 1
-	STA 0
+	LDR MP
+	LDRR MP SP
+	LDS -2
+	AJS 1
+	AJS 1
 	LDC 1
 	LDS 0
 	LDLA 3
@@ -122,36 +220,50 @@ fac:
 	LE
 	BRT -33
 	LDL 2
+	STR R3
 	AJS -1
+	LDRR SP MP
+	STR MP
 	RET
+	LDRR SP MP
+	STR MP
 	RET
 facRec:
-	LDS -1
-	LDLA 1
-	STA 0
+	LDR MP
+	LDRR MP SP
+	LDS -2
 	LDL 1
 	LDC 1
 	EQ
-	BRF 7
+	BRF 14
 	LDC 1
+	STR R3
 	AJS -1
+	LDRR SP MP
+	STR MP
 	RET
-	BRA 17
+	BRA 24
 	LDL 1
 	LDL 1
 	LDC 1
 	SUB
 	Bsr facRec
 	AJS -1
-	LDS 3
+	LDR R3
 	MUL
+	STR R3
 	AJS -1
+	LDRR SP MP
+	STR MP
 	RET
+	LDRR SP MP
+	STR MP
 	RET
 printFor:
-	LDS -1
-	LDLA 1
-	STA 0
+	LDR MP
+	LDRR MP SP
+	LDS -2
+	AJS 1
 	LDC 0
 	LDS 0
 	LDLA 2
@@ -173,11 +285,14 @@ printFor:
 	LDL 1
 	LT
 	BRT -28
+	LDRR SP MP
+	STR MP
 	RET
 printWhile:
-	LDS -1
-	LDLA 1
-	STA 0
+	LDR MP
+	LDRR MP SP
+	LDS -2
+	AJS 1
 	LDC 0
 	LDS 0
 	LDLA 2
@@ -199,12 +314,19 @@ printWhile:
 	LDL 1
 	LT
 	BRT -28
+	LDRR SP MP
+	STR MP
 	RET
 rInt:
-	LDS -1
-	LDLA 1
-	STA 0
+	LDR MP
+	LDRR MP SP
+	LDS -2
 	LDL 1
+	STR R3
 	AJS -1
+	LDRR SP MP
+	STR MP
 	RET
+	LDRR SP MP
+	STR MP
 	RET

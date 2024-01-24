@@ -42,40 +42,41 @@ codeAlgebra = CSharpAlgebra
   fExprCall
 
 insertDecl :: Decl -> Env -> Env
-insertDecl (Decl _ i) env = M.insert i (M.size env + 42) env
+insertDecl (Decl _ i) env = M.insert i (M.size env + 1) env
 
 getDecl :: Ident -> Env -> Int
 getDecl i env = env M.! i
 
 fClass :: ClassName -> [M] -> C
 fClass c ms =
-  gcs ++ [Bsr "main", HALT] ++ lcs
+  [LDLA 1, STR R4] ++ gcs ++ [Bsr "main", HALT] ++ lcs
   where
     (_, (gcs, lcs)) = foldl fMethod (M.empty, ([], [])) ms
     fMethod (env, (gcs, lcs)) m =
       let (gol, env', cs) = m env in
-      (M.union env env',
+      (env',
        if gol == Global
         then (gcs ++ cs, lcs)
         else (gcs, lcs ++ cs ))
 
 fMembDecl :: Decl -> M
-fMembDecl d env = (Global, insertDecl d env, [])
+fMembDecl d env = (Global, insertDecl d env, [AJS 1])
 
 fMembExpr :: E -> M
 fMembExpr e env = (Global, env, e env Value)
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth t x ps s env = (Local, env, [LABEL x] ++ stackParams ++ statements ++ [RET])
+fMembMeth t x ps s env = trace
+  (show x ++ show senv)
+  (Local, env, [LABEL x, LDR MP, LDRR MP SP] ++ map loadParam ps ++ statements ++ [LDRR SP MP,STR MP, RET])
   where
-    pl = length ps
+    pl = negate (length ps + 1)
     denv = foldr insertDecl env ps
     (senv, statements) = s denv
-    setParam (p, code) (Decl _ i) = (p + 1, code ++ [LDS p, LDLA (getDecl i denv), STA 0])
-    stackParams = snd (foldl setParam (negate pl, []) ps)
+    loadParam _ = LDS pl
 
 fStatDecl :: Decl -> S
-fStatDecl d env = (insertDecl d env, [])
+fStatDecl d env = (insertDecl d env, [AJS 1])
 
 fStatExpr :: E -> S
 fStatExpr e env = (env, e env Value ++ [pop])
@@ -91,7 +92,7 @@ fStatWhile e s1 env = (env, [BRA n] ++ snd (s1 env) ++ eCode ++ [BRT (-(n + k + 
   (n, k) = (codeSize (snd $ s1 env), codeSize eCode)
 
 fStatReturn :: E -> S
-fStatReturn e env = (env, e env Value ++ [pop] ++ [RET])
+fStatReturn e env = (env, e env Value ++ [STR R3, pop] ++ [LDRR SP MP,STR MP,RET])
 
 fStatBlock :: [S] -> S
 fStatBlock s env = foldl getStat (env, []) s
@@ -138,7 +139,7 @@ fExprOp op    e1 e2 env va = e1 env Value ++ e2 env Value ++ [
 
 fExprCall :: Ident -> [E] -> E
 fExprCall "print" es env va = concatMap (\e -> e env Value ++ [TRAP 0]) es ++ [AJS 1]
-fExprCall i es env va = concatMap (\e -> e env Value) es ++ [Bsr i, AJS (negate $ length es), LDS (2 + length es)]
+fExprCall i es env va = concatMap (\e -> e env Value) es ++ [Bsr i, pop, LDR R3]
 
 
 -- | Whether we are computing the value of a variable, or a pointer to it
