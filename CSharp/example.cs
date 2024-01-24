@@ -1,7 +1,9 @@
 class Hello
 {
     int a;
+    int b;
     a = 10;
+    b = 20;
 
     // Test main function with scope and type errors
     // void main()
@@ -33,16 +35,16 @@ class Hello
         // machine halted
 
         // test with global var
-        print(a * 10);
+        // print(a * 10);
 
-        // test with calculations and function calls
-        printSquare(rInt(3));
-        printAdd(4, 5);
-        print3(1, 2, 3);
+        // // test with calculations and function calls
+        // printSquare(rInt(3));
+        // printAdd(4, 5);
+        // print3(1, 2, 3);
 
-        // test for and while
-        print(fac(10));
-        print(facRec(3));
+        // // test for and while
+        // print(fac(10));
+        print(facRec(10));
         printFor(10);
         printWhile(10);
 

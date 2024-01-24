@@ -42,11 +42,7 @@ codeAlgebra = CSharpAlgebra
   fExprCall
 
 insertDecl :: Decl -> Env -> Env
-insertDecl (Decl _ i) env = M.insert i newIndex env
-  where
-    newIndex
-      | M.size env == 0 = 42
-      | otherwise = maximum (M.elems env) + 1
+insertDecl (Decl _ i) env = M.insert i (M.size env + 42) env
 
 getDecl :: Ident -> Env -> Int
 getDecl i env = env M.! i
@@ -55,8 +51,8 @@ fClass :: ClassName -> [M] -> C
 fClass c ms =
   gcs ++ [Bsr "main", HALT] ++ lcs
   where
-    (_, (gcs, lcs)) = foldl f (M.empty, ([], [])) ms
-    f (env, (gcs, lcs)) m =
+    (_, (gcs, lcs)) = foldl fMethod (M.empty, ([], [])) ms
+    fMethod (env, (gcs, lcs)) m =
       let (gol, env', cs) = m env in
       (M.union env env',
        if gol == Global
@@ -75,8 +71,8 @@ fMembMeth t x ps s env = (Local, M.union denv senv, [LABEL x] ++ stackParams ++ 
     pl = length ps
     denv = foldr insertDecl env ps
     (senv, statements) = s denv
-    f (p, code) (Decl _ i) = (p + 1, code ++ [LDS p, LDLA (getDecl i denv), STA 0])
-    stackParams = snd (foldl f (negate pl, []) ps)
+    setParam (p, code) (Decl _ i) = (p + 1, code ++ [LDS p, LDLA (getDecl i denv), STA 0])
+    stackParams = snd (foldl setParam (negate pl, []) ps)
 
 fStatDecl :: Decl -> S
 fStatDecl d env = (insertDecl d env, [])
@@ -85,27 +81,27 @@ fStatExpr :: E -> S
 fStatExpr e env = (env, e env Value ++ [pop])
 
 fStatIf :: E -> S -> S -> S
-fStatIf e s1 s2 env = (env, c ++ [BRF (n1 + 2)] ++ snd (s1 env) ++ [BRA n2] ++ snd (s2 env)) where
-  c        = e env Value
+fStatIf e s1 s2 env = (env, eCode ++ [BRF (n1 + 2)] ++ snd (s1 env) ++ [BRA n2] ++ snd (s2 env)) where
+  eCode        = e env Value
   (n1, n2) = (codeSize (snd $ s1 env), codeSize (snd $ s2 env))
 
 fStatWhile :: E -> S -> S
-fStatWhile e s1 env = (env, [BRA n] ++ snd (s1 env) ++ c ++ [BRT (-(n + k + 2))]) where
-  c      = e env Value
-  (n, k) = (codeSize (snd $ s1 env), codeSize c)
+fStatWhile e s1 env = (env, [BRA n] ++ snd (s1 env) ++ eCode ++ [BRT (-(n + k + 2))]) where
+  eCode      = e env Value
+  (n, k) = (codeSize (snd $ s1 env), codeSize eCode)
 
 fStatReturn :: E -> S
 fStatReturn e env = (env, e env Value ++ [pop] ++ [RET])
 
 fStatBlock :: [S] -> S
-fStatBlock s env = foldl f (env, []) s
+fStatBlock s env = foldl getStat (env, []) s
   where
-    f (env, cs) s = let (env', cs') = s env in
+    getStat (env, cs) s = let (env', cs') = s env in
       (env', cs ++ cs')
 
 fExprLit :: Literal -> E
-fExprLit l env va = [LDC n] where
-  n = case l of
+fExprLit l env va = [LDC value] where
+  value = case l of
     LitInt n  -> n
     LitBool b -> bool2int b
 

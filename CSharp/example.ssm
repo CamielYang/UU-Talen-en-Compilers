@@ -2,44 +2,14 @@
 	LDS 0
 	LDLA 42
 	STA 0
+	LDC 20
+	LDS 0
+	LDLA 43
+	STA 0
 	Bsr main
 	HALT
 main:
-	LDL 42
 	LDC 10
-	MUL
-	TRAP 0
-	AJS 1
-	AJS -1
-	LDC 3
-	Bsr rInt
-	AJS -1
-	LDS 3
-	Bsr printSquare
-	AJS -1
-	LDS 3
-	AJS -1
-	LDC 4
-	LDC 5
-	Bsr printAdd
-	AJS -2
-	LDS 4
-	AJS -1
-	LDC 1
-	LDC 2
-	LDC 3
-	Bsr print3
-	AJS -3
-	LDS 5
-	AJS -1
-	LDC 10
-	Bsr fac
-	AJS -1
-	LDS 3
-	TRAP 0
-	AJS 1
-	AJS -1
-	LDC 3
 	Bsr facRec
 	AJS -1
 	LDS 3
@@ -64,10 +34,10 @@ main:
 	AJS -1
 	LDS 3
 	LDS 0
-	LDLA 43
+	LDLA 44
 	STA 0
 	AJS -1
-	LDL 43
+	LDL 44
 	TRAP 0
 	AJS 1
 	AJS -1
@@ -83,10 +53,10 @@ main:
 	AJS -2
 	LDS 4
 	LDS 0
-	LDLA 43
+	LDLA 44
 	STA 0
 	AJS -1
-	LDL 43
+	LDL 44
 	TRAP 0
 	AJS 1
 	AJS -1
@@ -99,32 +69,32 @@ main:
 	RET
 test:
 	LDS -1
-	LDLA 44
+	LDLA 45
 	STA 0
-	LDL 44
+	LDL 45
 	TRAP 0
 	AJS 1
 	AJS -1
 	RET
 print3:
 	LDS -3
-	LDLA 46
+	LDLA 47
 	STA 0
 	LDS -2
-	LDLA 45
+	LDLA 46
 	STA 0
 	LDS -1
-	LDLA 44
+	LDLA 45
 	STA 0
+	LDL 47
+	TRAP 0
 	LDL 46
 	TRAP 0
 	LDL 45
 	TRAP 0
-	LDL 44
-	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 44
+	LDL 45
 	LDC 1
 	ADD
 	Bsr test
@@ -134,16 +104,16 @@ print3:
 	RET
 printSquare:
 	LDS -1
-	LDLA 46
+	LDLA 47
 	STA 0
-	LDL 46
-	LDL 46
+	LDL 47
+	LDL 47
 	MUL
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 46
-	LDL 46
+	LDL 47
+	LDL 47
 	MUL
 	AJS -1
 	RET
@@ -153,23 +123,23 @@ printAdd:
 	LDLA 47
 	STA 0
 	LDS -1
-	LDLA 46
+	LDLA 47
 	STA 0
 	LDL 47
-	LDL 46
+	LDL 47
 	ADD
 	TRAP 0
 	AJS 1
 	AJS -1
 	LDL 47
-	LDL 46
+	LDL 47
 	ADD
 	AJS -1
 	RET
 	RET
 fac:
 	LDS -1
-	LDLA 46
+	LDLA 47
 	STA 0
 	LDC 1
 	LDS 0
@@ -197,7 +167,7 @@ fac:
 	STA 0
 	AJS -1
 	LDL 48
-	LDL 46
+	LDL 47
 	LE
 	BRT -33
 	LDL 47
@@ -233,57 +203,57 @@ printFor:
 	STA 0
 	LDC 0
 	LDS 0
-	LDLA 50
+	LDLA 49
 	STA 0
 	AJS -1
 	BRA 21
-	LDL 50
+	LDL 49
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 50
+	LDL 49
 	LDC 1
 	ADD
 	LDS 0
-	LDLA 50
+	LDLA 49
 	STA 0
 	AJS -1
-	LDL 50
+	LDL 49
 	LDL 49
 	LT
 	BRT -28
 	RET
 printWhile:
 	LDS -1
-	LDLA 51
+	LDLA 50
 	STA 0
 	LDC 0
 	LDS 0
-	LDLA 52
+	LDLA 50
 	STA 0
 	AJS -1
 	BRA 21
-	LDL 52
+	LDL 50
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 52
+	LDL 50
 	LDC 1
 	ADD
 	LDS 0
-	LDLA 52
+	LDLA 50
 	STA 0
 	AJS -1
-	LDL 52
-	LDL 51
+	LDL 50
+	LDL 50
 	LT
 	BRT -28
 	RET
 rInt:
 	LDS -1
-	LDLA 51
+	LDLA 50
 	STA 0
-	LDL 51
+	LDL 50
 	AJS -1
 	RET
 	RET
