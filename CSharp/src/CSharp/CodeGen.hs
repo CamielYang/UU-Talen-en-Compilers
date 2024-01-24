@@ -66,7 +66,7 @@ fMembExpr :: E -> M
 fMembExpr e env = (Global, env, e env Value)
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth t x ps s env = (Local, M.union denv senv, [LABEL x] ++ stackParams ++ statements ++ [RET])
+fMembMeth t x ps s env = (Local, env, [LABEL x] ++ stackParams ++ statements ++ [RET])
   where
     pl = length ps
     denv = foldr insertDecl env ps

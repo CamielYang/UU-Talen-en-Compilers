@@ -1,9 +1,7 @@
 class Hello
 {
     int a;
-    int b;
     a = 10;
-    b = 20;
 
     // Test main function with scope and type errors
     // void main()
@@ -23,6 +21,8 @@ class Hello
     // Test main function with correct scope and type
     void main()
     {
+        int a;
+        a = 10;
         // Expected output:
         // 1x - 100
         // 2x - 9
@@ -42,21 +42,21 @@ class Hello
         // printAdd(4, 5);
         // print3(1, 2, 3);
 
-        // // test for and while
-        // print(fac(10));
-        print(facRec(10));
-        printFor(10);
-        printWhile(10);
+        // test for and while
+        print(fac(10));
+        // print(facRec(10));
+        // printFor(10);
+        // printWhile(10);
 
-        // test with return value and reassign to same var
-        int x;
-        x = printSquare(rInt(3));
-        print(x);
-        x = printAdd(rInt(40), rInt(5));
-        print(x);
+        // // test with return value and reassign to same var
+        // int x;
+        // x = printSquare(rInt(3));
+        // print(x);
+        // x = printAdd(rInt(40), rInt(5));
+        // print(x);
 
-        // test with global var
-        print(a * 10);
+        // // test with global var
+        // print(a * 10);
     }
 
     void test(int a)

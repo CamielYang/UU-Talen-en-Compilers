@@ -1,100 +1,51 @@
 	LDC 10
 	LDS 0
-	LDLA 42
-	STA 0
-	LDC 20
-	LDS 0
-	LDLA 43
+	LDLA 0
 	STA 0
 	Bsr main
 	HALT
 main:
 	LDC 10
-	Bsr facRec
-	AJS -1
-	LDS 3
-	TRAP 0
-	AJS 1
-	AJS -1
-	LDC 10
-	Bsr printFor
-	AJS -1
-	LDS 3
-	AJS -1
-	LDC 10
-	Bsr printWhile
-	AJS -1
-	LDS 3
-	AJS -1
-	LDC 3
-	Bsr rInt
-	AJS -1
-	LDS 3
-	Bsr printSquare
-	AJS -1
-	LDS 3
 	LDS 0
-	LDLA 44
+	LDLA 1
 	STA 0
 	AJS -1
-	LDL 44
-	TRAP 0
-	AJS 1
-	AJS -1
-	LDC 40
-	Bsr rInt
-	AJS -1
-	LDS 3
-	LDC 5
-	Bsr rInt
-	AJS -1
-	LDS 3
-	Bsr printAdd
-	AJS -2
-	LDS 4
-	LDS 0
-	LDLA 44
-	STA 0
-	AJS -1
-	LDL 44
-	TRAP 0
-	AJS 1
-	AJS -1
-	LDL 42
 	LDC 10
-	MUL
+	Bsr fac
+	AJS -1
+	LDS 3
 	TRAP 0
 	AJS 1
 	AJS -1
 	RET
 test:
 	LDS -1
-	LDLA 45
+	LDLA 1
 	STA 0
-	LDL 45
+	LDL 1
 	TRAP 0
 	AJS 1
 	AJS -1
 	RET
 print3:
 	LDS -3
-	LDLA 47
+	LDLA 3
 	STA 0
 	LDS -2
-	LDLA 46
+	LDLA 2
 	STA 0
 	LDS -1
-	LDLA 45
+	LDLA 1
 	STA 0
-	LDL 47
+	LDL 3
 	TRAP 0
-	LDL 46
+	LDL 2
 	TRAP 0
-	LDL 45
+	LDL 1
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 45
+	LDL 1
 	LDC 1
 	ADD
 	Bsr test
@@ -104,81 +55,81 @@ print3:
 	RET
 printSquare:
 	LDS -1
-	LDLA 47
+	LDLA 1
 	STA 0
-	LDL 47
-	LDL 47
+	LDL 1
+	LDL 1
 	MUL
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 47
-	LDL 47
+	LDL 1
+	LDL 1
 	MUL
 	AJS -1
 	RET
 	RET
 printAdd:
 	LDS -2
-	LDLA 47
+	LDLA 2
 	STA 0
 	LDS -1
-	LDLA 47
+	LDLA 1
 	STA 0
-	LDL 47
-	LDL 47
+	LDL 2
+	LDL 1
 	ADD
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 47
-	LDL 47
+	LDL 2
+	LDL 1
 	ADD
 	AJS -1
 	RET
 	RET
 fac:
 	LDS -1
-	LDLA 47
+	LDLA 1
 	STA 0
 	LDC 1
 	LDS 0
-	LDLA 48
+	LDLA 3
 	STA 0
 	AJS -1
 	LDC 1
 	LDS 0
-	LDLA 47
+	LDLA 2
 	STA 0
 	AJS -1
 	BRA 26
-	LDL 47
-	LDL 48
+	LDL 2
+	LDL 3
 	MUL
 	LDS 0
-	LDLA 47
+	LDLA 2
 	STA 0
 	AJS -1
-	LDL 48
+	LDL 3
 	LDC 1
 	ADD
 	LDS 0
-	LDLA 48
+	LDLA 3
 	STA 0
 	AJS -1
-	LDL 48
-	LDL 47
+	LDL 3
+	LDL 1
 	LE
 	BRT -33
-	LDL 47
+	LDL 2
 	AJS -1
 	RET
 	RET
 facRec:
 	LDS -1
-	LDLA 49
+	LDLA 1
 	STA 0
-	LDL 49
+	LDL 1
 	LDC 1
 	EQ
 	BRF 7
@@ -186,8 +137,8 @@ facRec:
 	AJS -1
 	RET
 	BRA 17
-	LDL 49
-	LDL 49
+	LDL 1
+	LDL 1
 	LDC 1
 	SUB
 	Bsr facRec
@@ -199,61 +150,61 @@ facRec:
 	RET
 printFor:
 	LDS -1
-	LDLA 49
+	LDLA 1
 	STA 0
 	LDC 0
 	LDS 0
-	LDLA 49
+	LDLA 2
 	STA 0
 	AJS -1
 	BRA 21
-	LDL 49
+	LDL 2
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 49
+	LDL 2
 	LDC 1
 	ADD
 	LDS 0
-	LDLA 49
+	LDLA 2
 	STA 0
 	AJS -1
-	LDL 49
-	LDL 49
+	LDL 2
+	LDL 1
 	LT
 	BRT -28
 	RET
 printWhile:
 	LDS -1
-	LDLA 50
+	LDLA 1
 	STA 0
 	LDC 0
 	LDS 0
-	LDLA 50
+	LDLA 2
 	STA 0
 	AJS -1
 	BRA 21
-	LDL 50
+	LDL 2
 	TRAP 0
 	AJS 1
 	AJS -1
-	LDL 50
+	LDL 2
 	LDC 1
 	ADD
 	LDS 0
-	LDLA 50
+	LDLA 2
 	STA 0
 	AJS -1
-	LDL 50
-	LDL 50
+	LDL 2
+	LDL 1
 	LT
 	BRT -28
 	RET
 rInt:
 	LDS -1
-	LDLA 50
+	LDLA 1
 	STA 0
-	LDL 50
+	LDL 1
 	AJS -1
 	RET
 	RET
