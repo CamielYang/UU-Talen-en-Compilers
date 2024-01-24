@@ -15,7 +15,10 @@ import Debug.Trace
 
 -- The types that we generate for each datatype: our type variables for the algebra.
 -- Change these definitions instead of the function signatures to get better type errors.
-type Env = M.Map Ident Int
+data Env = Env {
+  global :: M.Map Ident Int,
+  local :: M.Map Ident Int
+} deriving Show
 data GlobalOrLocal = Global | Local
   deriving Eq
 
@@ -41,17 +44,21 @@ codeAlgebra = CSharpAlgebra
   fExprOp
   fExprCall
 
-insertDecl :: Decl -> Env -> Env
-insertDecl (Decl _ i) env = M.insert i (M.size env + 1) env
+insertDecl :: GlobalOrLocal -> Decl -> Env -> Env
+insertDecl gol (Decl _ i) env@Env{..}
+  | gol == Global = env { global = M.insert i (M.size global + 1) global }
+  | otherwise = env { local = M.insert i (M.size local + 1) local }
 
-getDecl :: Ident -> Env -> Int
-getDecl i env = env M.! i
+getDecl :: Ident -> Env -> (GlobalOrLocal, Int)
+getDecl i Env{..}
+  | M.member i global = (Global, global M.! i)
+  | otherwise = (Local, local M.! i)
 
 fClass :: ClassName -> [M] -> C
 fClass c ms =
   [LDLA 1, STR R4] ++ gcs ++ [Bsr "main", HALT] ++ lcs
   where
-    (_, (gcs, lcs)) = foldl fMethod (M.empty, ([], [])) ms
+    (_, (gcs, lcs)) = foldl fMethod (Env M.empty M.empty, ([], [])) ms
     fMethod (env, (gcs, lcs)) m =
       let (gol, env', cs) = m env in
       (env',
@@ -60,7 +67,7 @@ fClass c ms =
         else (gcs, lcs ++ cs ))
 
 fMembDecl :: Decl -> M
-fMembDecl d env = (Global, insertDecl d env, [AJS 1])
+fMembDecl d env = (Global, insertDecl Global d env, [AJS 1])
 
 fMembExpr :: E -> M
 fMembExpr e env = (Global, env, e env Value)
@@ -71,12 +78,12 @@ fMembMeth t x ps s env = trace
   (Local, env, [LABEL x, LDR MP, LDRR MP SP] ++ map loadParam ps ++ statements ++ [LDRR SP MP,STR MP, RET])
   where
     pl = negate (length ps + 1)
-    denv = foldr insertDecl env ps
+    denv = foldl (flip $ insertDecl Local) env ps
     (senv, statements) = s denv
     loadParam _ = LDS pl
 
 fStatDecl :: Decl -> S
-fStatDecl d env = (insertDecl d env, [AJS 1])
+fStatDecl d env = (insertDecl Local d env, [AJS 1])
 
 fStatExpr :: E -> S
 fStatExpr e env = (env, e env Value ++ [pop])
@@ -92,7 +99,7 @@ fStatWhile e s1 env = (env, [BRA n] ++ snd (s1 env) ++ eCode ++ [BRT (-(n + k + 
   (n, k) = (codeSize (snd $ s1 env), codeSize eCode)
 
 fStatReturn :: E -> S
-fStatReturn e env = (env, e env Value ++ [STR R3, pop] ++ [LDRR SP MP,STR MP,RET])
+fStatReturn e env = (env, e env Value ++ [STR R3] ++ [LDRR SP MP,STR MP,RET])
 
 fStatBlock :: [S] -> S
 fStatBlock s env = foldl getStat (env, []) s
@@ -111,9 +118,13 @@ codeBool bool env = fExprLit (LitBool bool) env Value
 
 fExprVar :: Ident -> E
 fExprVar i env va = case va of
-    Value   ->  [LDL  loc]
-    Address ->  [LDLA loc]
-  where loc = getDecl i env
+  Value   ->  load $ LDL loc
+  Address ->  load $ LDLA loc
+  where
+    (gol, loc) = getDecl i env
+    load code
+      | gol == Global = [LDR MP, STR R5, LDRR MP R4, code, LDRR MP R5]
+      | otherwise     = [code]
 
 fExprOp :: Operator -> E -> E -> E
 fExprOp OpAsg e1 e2 env va = e2 env Value ++ [LDS 0] ++ e1 env Address ++ [STA 0]

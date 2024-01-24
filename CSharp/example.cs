@@ -1,6 +1,10 @@
 class Hello
 {
-
+    int a;
+    int b;
+    b= 11;
+    int c;
+    c= 12;
 
     // Test main function with scope and type errors
     // void main()
@@ -20,8 +24,9 @@ class Hello
     // Test main function with correct scope and type
     void main()
     {
-        int a;
         a = 10;
+        // int a;
+        // a = 10;
         // Expected output:
         // 1x - 100
         // 2x - 9
@@ -55,12 +60,14 @@ class Hello
         print(x);
 
         // test with global var
+        a = 9;
         print(a * 10);
     }
 
     void test(int a)
     {
         print(a);
+        print(b * c);
     }
 
     void print3(int x, int y, int z)
