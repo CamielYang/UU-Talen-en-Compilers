@@ -44,7 +44,9 @@ codeAlgebra = CSharpAlgebra
 insertDecl :: Decl -> Env -> Env
 insertDecl (Decl _ i) env = M.insert i newIndex env
   where
-    newIndex = M.size env + 1
+    newIndex
+      | M.size env == 0 = 42
+      | otherwise = maximum (M.elems env) + 1
 
 getDecl :: Ident -> Env -> Int
 getDecl i env = env M.! i
