@@ -46,13 +46,13 @@ codeAlgebra = CSharpAlgebra
 
 insertDecl :: GlobalOrLocal -> Decl -> Env -> Env
 insertDecl gol (Decl _ i) env@Env{..}
-  | gol == Global = env { global = M.insert i (M.size global + 1) global }
-  | otherwise = env { local = M.insert i (M.size local + 1) local }
+  | gol == Local = env { local = M.insert i (M.size local + 1) local }
+  | otherwise = env { global = M.insert i (M.size global + 1) global }
 
 getDecl :: Ident -> Env -> (GlobalOrLocal, Int)
 getDecl i Env{..}
-  | M.member i global = (Global, global M.! i)
-  | otherwise = (Local, local M.! i)
+  | M.member i local = (Local, local M.! i)
+  | otherwise = (Global, global M.! i)
 
 fClass :: ClassName -> [M] -> C
 fClass c ms =

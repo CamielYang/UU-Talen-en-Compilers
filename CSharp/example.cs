@@ -41,7 +41,7 @@ class Hello
         // test with global var
         print(a * 10);
 
-        // // test with calculations and function calls
+        // test with calculations and function calls
         printSquare(rInt(3));
         printAdd(4, 5);
         print3(1, 2, 3);
@@ -68,6 +68,9 @@ class Hello
     {
         print(a);
         print(b * c);
+        int test;
+        test = 1;
+        print(test);
     }
 
     void print3(int x, int y, int z)

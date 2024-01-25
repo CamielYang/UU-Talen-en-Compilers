@@ -149,11 +149,7 @@ test:
 	LDR MP
 	LDRR MP SP
 	LDS -2
-	LDR MP
-	STR R5
-	LDRR MP R4
 	LDL 1
-	LDRR MP R5
 	TRAP 0
 	AJS 1
 	AJS -1
@@ -168,6 +164,16 @@ test:
 	LDL 3
 	LDRR MP R5
 	MUL
+	TRAP 0
+	AJS 1
+	AJS -1
+	AJS 1
+	LDC 1
+	LDS 0
+	LDLA 2
+	STA 0
+	AJS -1
+	LDL 2
 	TRAP 0
 	AJS 1
 	AJS -1
