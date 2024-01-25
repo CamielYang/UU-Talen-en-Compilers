@@ -12,18 +12,30 @@ import Data.List
 
 data ERet = ERet {
   eIdent   :: Ident,
-  eParams  :: Maybe [Decl],
   eRetType :: RetType
 } deriving (Show)
 
 baseERet = ERet {
   eIdent   = "",
-  eParams  = Nothing,
   eRetType = TyVoid
 }
 
+data VarEnv = VarEnv {
+  varName :: Ident,
+  varType :: RetType
+} deriving (Show)
+
+data MethodEnv = MethodEnv {
+  methodName :: Ident,
+  methodParams :: [Decl],
+  methodType :: RetType
+} deriving (Show)
+
 data Phase = Symbol | Analysis deriving (Show, Eq)
-type Env   = M.Map Ident ERet
+data Env   = Env {
+  var    :: M.Map Ident VarEnv,
+  method :: M.Map Ident MethodEnv
+}
 
 type CRT = Phase -> Env -> ([ERet], C)
 type C   = Validation [String] Env -- Class
@@ -48,11 +60,23 @@ typeAnalysisAlgebra = CSharpAlgebra
   fExprOp
   fExprCall
 
-insertDecl :: Decl -> Maybe [Decl] -> Env -> Env
-insertDecl (Decl rt i) ps = M.insert i (ERet i ps rt)
+insertVar :: Decl -> Env -> Env
+insertVar (Decl rt i) env@Env{..} =
+  env {
+    var = M.insert i (VarEnv i rt) var
+  }
 
-getDeclRt :: Ident -> Env -> ERet
-getDeclRt i env = env M.! i
+insertMethod :: Decl -> [Decl] -> Env -> Env
+insertMethod (Decl rt i) ps env@Env{..} =
+  env {
+    method = M.insert i (MethodEnv i ps rt) method
+  }
+
+getVar :: Ident -> Env -> VarEnv
+getVar i Env{..} = var M.! i
+
+getMethod :: Ident -> Env -> MethodEnv
+getMethod i Env{..} = method M.! i
 
 foldGo :: [CRT] -> Phase -> Env -> ([ERet], C)
 foldGo xs phase env = fst $ foldl go (([], Success env), env) xs
@@ -70,30 +94,32 @@ go :: C -> C -> C
 go (Failure errs1) (Failure errs2) = Failure (errs1 <> errs2)
 go (Failure errs )  _              = Failure errs
 go  _              (Failure errs ) = Failure errs
-go (Success env1 ) (Success env2 ) = Success $ env1 `M.union` env2
+go (Success env1 ) (Success env2 ) =
+  Success $ env1 {
+    var = var env1 `M.union` var env2,
+    method = method env1 `M.union` method env2
+  }
 
 fClass :: ClassName -> [M] -> C
 fClass _ ms = snd passAnalysis
   where
-    passSymbol   = snd $ foldGo ms Symbol M.empty
-    passAnalysis = foldGo ms Analysis (fromRight M.empty (validationToEither passSymbol))
+    passSymbol   = snd $ foldGo ms Symbol (Env M.empty M.empty)
+    passAnalysis = foldGo ms Analysis (fromRight (Env M.empty M.empty) (validationToEither passSymbol))
 
 fMembDecl :: Decl -> M
-fMembDecl d Symbol   env = ([], Success $ insertDecl d Nothing env)
+fMembDecl d Symbol   env = ([], Success $ insertVar d env)
 fMembDecl d Analysis env = ([], Success env)
 
 fMembExpr :: E -> M
 fMembExpr e phase env = ([], snd $ e phase env)
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth rt i ps s Symbol env =
-  s Symbol
-    (foldr
-      (`insertDecl` Nothing)
-      (insertDecl (Decl rt i) (Just ps) env)
-      ps)
+fMembMeth rt i ps s Symbol env = s Symbol
+  (foldr insertVar (insertMethod (Decl rt i) ps env) ps)
 fMembMeth rt i ps s Analysis env = case wrongRtType of
-  Nothing -> s'
+  Nothing  -> case sVal of
+    Success _ -> (rts, Success env)
+    Failure err  -> ([], Failure err)
   Just rt' -> ([], Failure (typeError ["Function", show i, "expected", show rt, "but got", show $ eRetType rt']) <*> sVal)
   where
     wrongRtType = find (\rt' -> rt /= eRetType rt') rts
@@ -101,7 +127,7 @@ fMembMeth rt i ps s Analysis env = case wrongRtType of
 
 fStatDecl :: Decl -> S
 fStatDecl d Symbol   env = ([], Success env)
-fStatDecl d Analysis env = ([], Success $ insertDecl d Nothing env)
+fStatDecl d Analysis env = ([], Success $ insertVar d env)
 
 fStatExpr :: E -> S
 fStatExpr e phase env = ([], snd $ e phase env)
@@ -130,12 +156,14 @@ fExprLit l _ env = ([baseERet { eRetType = n }], Success env)
       LitBool b -> NV TyBool
 
 fExprVar :: Ident -> E
-fExprVar i _ env = ([getDeclRt i env], Success env)
+fExprVar i _ env = ([ERet i varType], Success env)
+  where
+    VarEnv{..} = getVar i env
 
 fExprOp :: Operator -> E -> E -> E
 fExprOp _ _ _ Symbol env = ([], Success env)
 fExprOp OpAsg addr val Analysis env =
-  if eRetType (head $ fst (addr Analysis env)) == eRetType (head $ fst (val Analysis env))
+  if addRt == valRt
     then (fst (addr Analysis env), Success env)
     else (
       [],
@@ -164,18 +192,18 @@ fExprCall _       ps Symbol   env = foldGo ps Symbol env
 fExprCall "print" ps Analysis env
   | validPrint = foldGo ps Analysis env
   | otherwise  = (
-    [ERet "print" Nothing TyVoid],
+    [ERet "print" TyVoid],
     Failure $ typeError ["Function print can't be called with void expressions"]
   )
   where
     validPrint = all (\p -> eRetType (head $ fst $ p Analysis env) /= TyVoid) ps
 fExprCall i args Analysis env
-  | validTypes && validArgsLength = ([method], snd $ foldGo args Analysis env)
+  | validTypes && validArgsLength = ([ERet methodName methodType], snd $ foldGo args Analysis env)
   | otherwise = ([], Failure $ argErrs <> typeErrs)
   where
-    method = getDeclRt i env
-    methodps = fromJust $ eParams method
-    methodargs = map (\p -> eRetType $ head $ fst $ p Analysis env) args
+    MethodEnv{..} = getMethod i env
+    methodps      = methodParams
+    methodargs    = map (\p -> eRetType $ head $ fst $ p Analysis env) args
     psZip = zip
       methodps
       methodargs
@@ -194,7 +222,7 @@ fExprCall i args Analysis env
 
     -- Types
     validTypes = all (\(Decl r1 _, r2) -> r1 == r2) psZip
-    typeErrs = foldr fTypeErr [] psZip
+    typeErrs   = foldr fTypeErr [] psZip
     fTypeErr (Decl r1 pi, r2) vs
       | r1 == r2 = vs
       | otherwise = typeError [

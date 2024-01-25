@@ -72,8 +72,13 @@ fMembExpr :: E -> M
 fMembExpr e = e
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth rt i ps s Symbol  env = s Symbol   (insertDecl (Decl rt i) env)
-fMembMeth _ _ ps s Analysis env = s Analysis (foldr insertDecl env ps)
+fMembMeth rt i ps s Symbol  env = s Symbol (insertDecl (Decl rt i) env)
+fMembMeth _ i ps s Analysis env = case res of
+  Failure err -> Failure err
+  Success _   -> s Analysis env'
+  where
+    env' = foldr insertDecl env ps
+    res = s Analysis (foldr insertDecl env' ps)
 
 fStatDecl :: Decl -> S
 fStatDecl d Symbol   env = Success env

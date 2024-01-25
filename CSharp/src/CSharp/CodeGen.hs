@@ -73,8 +73,7 @@ fMembExpr :: E -> M
 fMembExpr e env = (Global, env, e env Value)
 
 fMembMeth :: RetType -> Ident -> [Decl] -> S -> M
-fMembMeth t x ps s env = trace
-  (show x ++ show senv)
+fMembMeth t x ps s env =
   (Local, env, [LABEL x, LDR MP, LDRR MP SP] ++ map loadParam ps ++ statements ++ [LDRR SP MP,STR MP, RET])
   where
     pl = negate (length ps + 1)

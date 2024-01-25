@@ -1,6 +1,6 @@
 # Analysis Documentation
 
-This document will contain all analysis that are being donee during compilation.
+This document will contain all analysis that are being donee during compilation. I also made some custom test-cases (test-cases/custom/*) to test different cases of the compiler.
 
 ## Scope Analysis
 

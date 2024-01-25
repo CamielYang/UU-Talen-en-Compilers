@@ -2,41 +2,14 @@ class Hello
 {
     int a;
     int b;
-    b= 11;
+    b = 11;
     int c;
-    c= 12;
-
-    // Test main function with scope and type errors
-    // void main()
-    // {
-    //     int h;
-    //     h = true;
-
-    //     int i;
-    //     i = true;
-
-    //     print(test(1));
-    //     print3();
-    //     print3(true);
-    //     printAdd(test(1), test(1));
-    // }
+    c = 12;
 
     // Test main function with correct scope and type
     void main()
     {
         a = 10;
-        // int a;
-        // a = 10;
-        // Expected output:
-        // 1x - 100
-        // 2x - 9
-        // 1x - 1 to 4
-        // 2x - 3628800
-        // 2x - 0 to 9
-        // 2x - 9
-        // 2x - 45
-        // 1x - 100
-        // machine halted
 
         // test with global var
         print(a * 10);
@@ -68,9 +41,6 @@ class Hello
     {
         print(a);
         print(b * c);
-        int test;
-        test = 1;
-        print(test);
     }
 
     void print3(int x, int y, int z)
